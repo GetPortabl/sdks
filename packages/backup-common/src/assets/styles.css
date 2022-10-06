@@ -1,0 +1,37 @@
+.portabl-backup-root a {
+  text-decoration: none;
+  color: black;
+  font-family: Poppins;
+  font-weight: 600;
+  display: flex;
+  line-height: 13px;
+  font-size: 13px;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  padding: 13px;
+  background: #ffffff;
+  box-shadow: 0px 1px 5px rgba(0, 0, 0, 0.2);
+  border: 1px solid transparent;
+  border-radius: 5px;
+  cursor: pointer;
+  box-sizing: border-box;
+}
+
+.portabl-backup-root a:hover {
+  border: 1px solid #555555;
+}
+
+.portabl-backup-root a:active {
+  background: black;
+  color: white;
+}
+
+.portabl-backup-root a .backup-portabl-logo-img-wrapper {
+  background-image: url('./images/backup-with-portabl-black-text.svg');
+  width: 160px;
+  height: 20px;
+}
+.portabl-backup-root a:active .backup-portabl-logo-img-wrapper {
+  background-image: url('./images/backup-with-portabl-white-text.svg');
+}
