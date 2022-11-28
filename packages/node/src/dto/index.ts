@@ -7,3 +7,4 @@ export * from './store-credential-request.dto';
 export * from './store-credential-response.dto';
 export * from './update-didcomm-thread-request.dto';
 export * from './update-didcomm-thread-response.dto';
+export * from './create-native-user-id-mapping-request.dto';

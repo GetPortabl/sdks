@@ -8,3 +8,4 @@ export * from './rount-to-int.util';
 export * from './singular-or-array.util';
 export * from './to-rfc3999.util';
 export * from './filter-claims.util';
+export * from './provider-url-from.util';

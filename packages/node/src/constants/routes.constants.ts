@@ -8,3 +8,6 @@ export const MESSAGES_ROUTE = '/messages';
 export const INVITATION_ROUTE = '/invitation';
 export const CREDENTIALS_ROUTE = '/verifiable-documents';
 export const CREDENTIAL_MANIFESTS_ROUTE = '/credential-manifests';
+
+export const PROVIDER_ROUTE = '/provider';
+export const PROVIDER_NATIVE_USER_ID_ROUTE = '/native-user-id';

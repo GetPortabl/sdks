@@ -98,11 +98,13 @@ export class AgentApiClient extends AgentApiBaseClient {
   async createDIDCommInvitationUrl(
     data: ICreateDIDCommMessageRequestBodyDto,
   ): Promise<string> {
-    const responseBody =
-      await this.post<ICreateDIDCommInvitationUrlResponseBodyDto>({
-        relativeUrl: `${DIDCOMM_ROUTE}${MESSAGES_ROUTE}${INVITATION_ROUTE}`,
-        data,
-      });
+    const responseBody = await this.post<
+      ICreateDIDCommMessageRequestBodyDto,
+      ICreateDIDCommInvitationUrlResponseBodyDto
+    >({
+      relativeUrl: `${DIDCOMM_ROUTE}${MESSAGES_ROUTE}${INVITATION_ROUTE}`,
+      data,
+    });
 
     if (!responseBody?.invitationUrl) {
       const dtoErrMsg = getErrMsg({
@@ -140,7 +142,10 @@ export class AgentApiClient extends AgentApiBaseClient {
   async storeCredential(
     data: IStoreCredentialRequestBodyDto,
   ): Promise<ICredentialDocumentModel> {
-    const responseBody = await this.post<IStoreCredentialResponseBodyDto>({
+    const responseBody = await this.post<
+      IStoreCredentialRequestBodyDto,
+      IStoreCredentialResponseBodyDto
+    >({
       relativeUrl: CREDENTIALS_ROUTE,
       data,
     });
