@@ -51,12 +51,12 @@ export class AgentApiBaseClient {
     return this.accessToken;
   }
 
-  async post<T>(args: {
+  async post<RequestBody, Response>(args: {
     relativeUrl?: string;
-    data?: Record<string, any>;
+    data?: RequestBody;
     headers?: Record<string, any> | {};
-  }): Promise<T> {
-    let response: AxiosResponse<T>;
+  }): Promise<Response> {
+    let response: AxiosResponse<Response>;
 
     try {
       const { relativeUrl = '', data = {}, headers = {} } = args || {};

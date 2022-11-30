@@ -87,10 +87,11 @@ class Portabl {
 
   async createCredential(args: {
     accessToken: string;
+    nativeUserId: string;
     claims: IKYCClaimsInput;
     evidences?: Array<IEvidence>;
   }): Promise<ICredential> {
-    const { accessToken, claims, evidences } = args;
+    const { accessToken, nativeUserId, claims, evidences } = args;
 
     const { dataProfileId, correlationIdEncrypted } = this.parseAccessToken(
       accessToken,
@@ -100,6 +101,8 @@ class Portabl {
       { goal: this.goal, dataProfileId },
     );
     const { data: dataProfile } = dataProfileModel;
+
+    await this.createNativeUserIdMapping(nativeUserId, accessToken);
 
     const credential: IVerifiableCredential = this.buildCredential({
       claims,
@@ -111,6 +114,16 @@ class Portabl {
       correlationIdEncrypted,
       dataProfile,
       credential,
+    });
+  }
+
+  private async createNativeUserIdMapping(
+    nativeUserId: string,
+    accessToken: string,
+  ): Promise<void> {
+    return this.portabl.provider.createNativeUserIdMapping({
+      nativeUserId,
+      accessToken,
     });
   }
 
