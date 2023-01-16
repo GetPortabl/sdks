@@ -7,33 +7,33 @@ import { IRefreshService } from './refresh-service.interface';
 
 export declare type ICredentialContextType = ICredentialContext | string;
 export interface ICredentialContext {
-  name?: string;
-  did?: string;
-  [x: string]: unknown;
+  readonly name?: string;
+  readonly did?: string;
+  readonly [x: string]: unknown;
 }
 
 export declare type ICredentialSchemaType = ICredentialSchema | string;
 export interface ICredentialSchema {
-  id: string;
-  type?: string;
+  readonly id: string;
+  readonly type?: string;
 }
 
 export interface ICredential {
-  '@context': Array<ICredentialContextType> | ICredentialContext | string;
-  type: Array<string>;
-  id: string;
-  issuer: string | IIssuer;
-  issuanceDate: string;
-  expirationDate?: string;
-  credentialSubject: IKYCClaims;
-  credentialStatus?: ICredentialStatus | Array<ICredentialStatus>;
-  credentialSchema?:
+  readonly '@context': Array<ICredentialContextType> | ICredentialContext | string;
+  readonly type: Array<string>;
+  readonly id: string;
+  readonly issuer: string | IIssuer;
+  readonly issuanceDate: string;
+  readonly expirationDate?: string;
+  readonly credentialSubject: IKYCClaims;
+  readonly credentialStatus?: ICredentialStatus | Array<ICredentialStatus>;
+  readonly credentialSchema?:
     | undefined
     | ICredentialSchemaType
     | Array<ICredentialSchemaType>;
-  evidence?: IEvidence | Array<IEvidence>;
-  refreshService?: IRefreshService | Array<IRefreshService>;
-  name?: string;
-  description?: string;
-  [x: string]: unknown;
+  readonly evidence?: IEvidence | Array<IEvidence>;
+  readonly refreshService?: IRefreshService | Array<IRefreshService>;
+  readonly name?: string;
+  readonly description?: string;
+  readonly [x: string]: unknown;
 }

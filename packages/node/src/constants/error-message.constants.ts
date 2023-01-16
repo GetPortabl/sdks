@@ -39,12 +39,12 @@ export const ERROR_MSG_SUBJECT_ENTITY_LABEL_MAP: Map<
 
 export const ERROR_MSG_MAP: Map<ErrorMsgSubjectScenarioEnum, string> = new Map([
   [
-    ErrorMsgSubjectScenarioEnum.MissingDataProfile,
-    'Data profile has to be identified either based on supplied goal or ID.',
+    ErrorMsgSubjectScenarioEnum.MissingCredentialManifest,
+    'Credential manifest has to be identified by supplied data profile version.',
   ],
   [
-    ErrorMsgSubjectScenarioEnum.MissingDataProfileIssuerId,
-    'Data profile has to include issuer ID.',
+    ErrorMsgSubjectScenarioEnum.MissingCredentialManifestIssuerId,
+    'Credential manifest has to include issuer ID.',
   ],
   [ErrorMsgSubjectScenarioEnum.MissingClaims, 'Claims have to be set.'],
   [
@@ -60,8 +60,8 @@ export const ERROR_MSG_MAP: Map<ErrorMsgSubjectScenarioEnum, string> = new Map([
     'Correlation ID has to be included inside of the provided access token.',
   ],
   [
-    ErrorMsgSubjectScenarioEnum.MissingDataProfileId,
-    'Data Profile ID has to be included inside of the provided access token.',
+    ErrorMsgSubjectScenarioEnum.MissingDataProfileVersion,
+    'Data Profile Version has to be included inside of the provided access token.',
   ],
   [
     ErrorMsgSubjectScenarioEnum.InvalidClaims,

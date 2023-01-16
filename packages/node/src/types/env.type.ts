@@ -1,1 +1,1 @@
-export type EnvType = 'dev' | 'sandbox' | 'production';
+export type EnvType = 'dev' | 'production';

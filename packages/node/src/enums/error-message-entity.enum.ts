@@ -12,14 +12,14 @@ export enum ErrorMsgSubjectEntityEnum {
 }
 
 export enum ErrorMsgSubjectScenarioEnum {
-  MissingDataProfile = 'MissingDataProfile',
-  MissingDataProfileIssuerId = 'MissingDataProfileIssuerId',
+  MissingCredentialManifest = 'MissingCredentialManifest',
+  MissingCredentialManifestIssuerId = 'MissingCredentialManifestIssuerId',
   InvalidClaims = 'InvalidClaims',
   InvalidEvidence = 'InvalidEvidence',
   MissingClaims = 'MissingClaims',
   MissingCredential = 'MissingCredential',
   MissingAccessToken = 'MissingAccessToken',
   MissingCorrelationId = 'MissingCorrelationId',
-  MissingDataProfileId = 'MissingDataProfileId',
+  MissingDataProfileVersion = 'MissingDataProfileVersion',
   InvalidEnvType = 'InvalidEnvType',
 }

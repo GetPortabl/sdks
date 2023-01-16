@@ -30,6 +30,7 @@ import {
 import { AuthApiClient } from './auth-api.client';
 import { AgentApiBaseClient } from './agent-api-base.client';
 import { IPortablAgentApiClientOpts } from '../interfaces/portabl-agent-api-client-opts';
+import { toQueryParams } from '../utils/to-query-params.utils';
 
 export class AgentApiClient extends AgentApiBaseClient {
   readonly authApiClient: AuthApiClient;
@@ -46,33 +47,23 @@ export class AgentApiClient extends AgentApiBaseClient {
     this.authApiClient = authApiClient;
   }
 
-  async getCredentialManifestById(
-    id: string,
-  ): Promise<ICredentialManifestModel> {
-    const responseBody = await this.get<IGetCredentialManifestResponseBodyDto>({
-      relativeUrl: `${CREDENTIAL_MANIFESTS_ROUTE}/${id}`,
+  async getCredentialManifestByQuery(args: {
+    readonly query: {
+      readonly goal: DIDCommGoalEnum;
+      readonly limit?: number;
+    } & ({
+      readonly version: string;
+    } | {
+      readonly latestVersion: true;
+    })
+  }): Promise<ICredentialManifestModel> {
+    const { query } = args;
+
+    const queryString = toQueryParams({ ...query, limit: 1 });
+
+    const responseBody = await this.get<IGetCredentialManifestsResponseBodyDto>({
+      relativeUrl: `${CREDENTIAL_MANIFESTS_ROUTE}${queryString ? `?${queryString}` : ''}`,
     });
-
-    if (!responseBody?.credentialManifest) {
-      const dtoErrMsg = getErrMsg({
-        template: ErrorMsgTemplateEnum.DtoError,
-        entity: ErrorMsgSubjectEntityEnum.CredentialManifest,
-      });
-      console.error(dtoErrMsg);
-      throw new Error(dtoErrMsg);
-    }
-
-    return responseBody.credentialManifest;
-  }
-
-  async getCredentialManifestByGoal(
-    goal: DIDCommGoalEnum,
-  ): Promise<ICredentialManifestModel> {
-    const responseBody = await this.get<IGetCredentialManifestsResponseBodyDto>(
-      {
-        relativeUrl: `${CREDENTIAL_MANIFESTS_ROUTE}?goal=${goal}&limit=${1}`,
-      },
-    );
 
     if (!responseBody?.credentialManifests) {
       const dtoErrMsg = getErrMsg({
@@ -88,7 +79,7 @@ export class AgentApiClient extends AgentApiBaseClient {
         template: ErrorMsgTemplateEnum.DtoError,
         entity: ErrorMsgSubjectEntityEnum.CredentialManifest,
       });
-      console.error(notFoundErrMsg, { goal });
+      console.error(notFoundErrMsg, { query });
       throw new Error(notFoundErrMsg);
     }
 
@@ -142,7 +133,7 @@ export class AgentApiClient extends AgentApiBaseClient {
   async storeCredential(
     data: IStoreCredentialRequestBodyDto,
   ): Promise<ICredentialDocumentModel> {
-    const responseBody = await this.post<
+    const responseBody: IStoreCredentialResponseBodyDto = await this.post<
       IStoreCredentialRequestBodyDto,
       IStoreCredentialResponseBodyDto
     >({

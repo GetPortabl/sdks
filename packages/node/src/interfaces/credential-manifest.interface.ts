@@ -7,18 +7,18 @@ import { ClaimFormatObjectType } from './claim-format-object.type';
 
 // https://identity.foundation/credential-manifest/#output-descriptor
 export interface IOutputDescriptor {
-  id?: string;
-  name?: string;
-  description?: string;
-  style?: IEntityStyleDescriptor;
-  display?: IDataDisplayDescriptor;
+  readonly id?: string;
+  readonly name?: string;
+  readonly description?: string;
+  readonly style?: IEntityStyleDescriptor;
+  readonly display?: IDataDisplayDescriptor;
 }
 
 // https://identity.foundation/credential-manifest/#credential-manifest
 export interface ICredentialManifest {
-  id: string;
-  issuer: IIssuer;
-  output_descriptors: Array<IOutputDescriptor>;
-  presentation_definition?: IPresentationDefinition;
-  format?: ClaimFormatObjectType;
+  readonly id: string;
+  readonly issuer: IIssuer;
+  readonly output_descriptors: Array<IOutputDescriptor>;
+  readonly presentation_definition?: IPresentationDefinition;
+  readonly format?: ClaimFormatObjectType;
 }

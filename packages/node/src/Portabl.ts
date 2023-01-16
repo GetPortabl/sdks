@@ -4,9 +4,9 @@ import jwtDecode from 'jwt-decode';
 import {
   KYC_VOCAB_URL,
   URN_UUID_PREFIX,
-  VKYC_VOCAB_TERM,
+  VKYC_CREDENTIAL_VOCAB_TERM,
   CORRELATION_ID_CUSTOM_CLAIM,
-  DATA_PROFILE_ID_CUSTOM_CLAIM,
+  DATA_PROFILE_VERSION_CUSTOM_CLAIM,
 } from './constants';
 import { DIDCommGoalEnum, ErrorMsgSubjectScenarioEnum } from './enums';
 import {
@@ -22,10 +22,11 @@ import {
   IAuthResponse,
   ICredentialManifestModel,
   ICredentialDocumentModel,
+  IVerifiableDocumentModel,
 } from './dto';
 import { credentialFrom, filterClaims, getErrMsg } from './utils';
 import { PortablApiClient } from './clients/portabl-api.client';
-import { transformClaimsWithTypes } from './utils/transform-claims-with-types.util';
+import { setJsonldTypesForCredentialSubject } from './utils/transform-claims-with-types.util';
 
 class Portabl {
   readonly portabl: PortablApiClient;
@@ -34,7 +35,7 @@ class Portabl {
 
   readonly goal: DIDCommGoalEnum;
 
-  readonly dataProfileId: string | undefined;
+  readonly dataProfileVersion: string | undefined;
 
   constructor(opts: IPortablOpts) {
     const {
@@ -43,7 +44,7 @@ class Portabl {
       clientId,
       clientSecret,
       scope,
-      dataProfileId,
+      dataProfileVersion,
     } = opts;
 
     this.portabl = new PortablApiClient({
@@ -55,27 +56,19 @@ class Portabl {
 
     this.debug = debug;
     this.goal = DIDCommGoalEnum.Backup;
-    this.dataProfileId = dataProfileId;
+    this.dataProfileVersion = dataProfileVersion;
   }
 
   async getAccessToken(opts?: {
     correlationId?: string;
-    dataProfileId?: string;
+    dataProfileVersion?: string;
   }): Promise<IAuthResponse> {
-    const { correlationId = `${URN_UUID_PREFIX}${uuid4()}`, dataProfileId } =
+    const { correlationId = `${URN_UUID_PREFIX}${uuid4()}`, dataProfileVersion } =
       opts || {};
-
-    const dataProfileModel: ICredentialManifestModel = await this.getDataProfile(
-      {
-        goal: this.goal,
-        dataProfileId: dataProfileId || this.dataProfileId,
-      },
-    );
-    const { data: dataProfile } = dataProfileModel;
 
     const authResponse: IAuthResponse = await this.portabl.auth.getToken({
       correlationId,
-      dataProfileId: dataProfile.id,
+      dataProfileVersion,
     });
 
     if (this.debug) {
@@ -90,29 +83,29 @@ class Portabl {
     nativeUserId: string;
     claims: IKYCClaimsInput;
     evidences?: Array<IEvidence>;
-  }): Promise<ICredential> {
+  }): Promise<ICredentialDocumentModel> {
     const { accessToken, nativeUserId, claims, evidences } = args;
 
-    const { dataProfileId, correlationIdEncrypted } = this.parseAccessToken(
+    const { correlationIdEncrypted, dataProfileVersion } = this.parseAccessToken(
       accessToken,
     );
 
-    const dataProfileModel: ICredentialManifestModel = await this.getDataProfile(
-      { goal: this.goal, dataProfileId },
+    const credentialManifestModel: ICredentialManifestModel = await this.getCredentialManifest(
+      { goal: this.goal, dataProfileVersion },
     );
-    const { data: dataProfile } = dataProfileModel;
+    const { data: credentialManifest } = credentialManifestModel;
 
     await this.createNativeUserIdMapping(nativeUserId, accessToken);
 
     const credential: IVerifiableCredential = this.buildCredential({
       claims,
       evidences,
-      dataProfile,
+      credentialManifest,
     });
 
     return this.storeCredential({
       correlationIdEncrypted,
-      dataProfile,
+      credentialManifest,
       credential,
     });
   }
@@ -147,17 +140,17 @@ class Portabl {
     }
   }
 
-  private validateDataProfileId(dataProfileId: string): void {
-    if (!dataProfileId) {
-      const missingDataProfileIdErrMsg: string = getErrMsg({
-        scenario: ErrorMsgSubjectScenarioEnum.MissingDataProfileId,
+  private validateDataProfileVersion(dataProfileVersion: string): void {
+    if (!dataProfileVersion) {
+      const missingDataProfileVersionErrMsg: string = getErrMsg({
+        scenario: ErrorMsgSubjectScenarioEnum.MissingDataProfileVersion,
       });
-      console.error(missingDataProfileIdErrMsg);
-      throw new Error(missingDataProfileIdErrMsg);
+      console.error(missingDataProfileVersionErrMsg);
+      throw new Error(missingDataProfileVersionErrMsg);
     }
   }
 
-  private validateClaims(claims: IKYCClaims): void {
+  private validateCredentialSubject(claims: IKYCClaims): void {
     if (!claims || Array.isArray(claims)) {
       const invalidClaimsErrMsg: string = getErrMsg({
         scenario: ErrorMsgSubjectScenarioEnum.InvalidEvidence,
@@ -172,13 +165,17 @@ class Portabl {
   }
 
   private validateEvidences(evidences: Array<IEvidence> | undefined): void {
-    // if (!Array.isArray(evidences) || evidences.length === 0) {
-    //   const invalidEvidenceErrMsg: string = getErrMsg({
-    //     scenario: ErrorMsgSubjectScenarioEnum.InvalidEvidence,
-    //   });
-    //   console.error(invalidEvidenceErrMsg, { evidences });
-    //   throw new Error(invalidEvidenceErrMsg);
-    // }
+    if (typeof evidences === undefined) {
+      return;
+    }
+
+    if (!Array.isArray(evidences) || evidences.length === 0) {
+      const invalidEvidenceErrMsg: string = getErrMsg({
+        scenario: ErrorMsgSubjectScenarioEnum.InvalidEvidence,
+      });
+      console.error(invalidEvidenceErrMsg, { evidences });
+      throw new Error(invalidEvidenceErrMsg);
+    }
 
     if (this.debug) {
       console.debug('(5) evidences', JSON.stringify(evidences || [], null, 2));
@@ -195,23 +192,23 @@ class Portabl {
     }
   }
 
-  private validateDataProfile(dataProfile: ICredentialManifest): void {
-    if (!dataProfile) {
-      const missingDataProfileErrMsg: string = getErrMsg({
-        scenario: ErrorMsgSubjectScenarioEnum.MissingDataProfile,
+  private validateCredentialManifest(credentialManifest: ICredentialManifest): void {
+    if (!credentialManifest) {
+      const missingCredentialManifestErrMsg: string = getErrMsg({
+        scenario: ErrorMsgSubjectScenarioEnum.MissingCredentialManifest,
       });
-      console.error(missingDataProfileErrMsg);
-      throw new Error(missingDataProfileErrMsg);
+      console.error(missingCredentialManifestErrMsg);
+      throw new Error(missingCredentialManifestErrMsg);
     }
   }
 
-  private validateDataProfileIssuerId(dataProfile: ICredentialManifest): void {
-    if (!dataProfile?.issuer?.id) {
-      const missingDataProfileIssuerIdErrMsg: string = getErrMsg({
-        scenario: ErrorMsgSubjectScenarioEnum.MissingDataProfileIssuerId,
+  private validateCredentialManifestIssuerId(credentialManifest: ICredentialManifest): void {
+    if (!credentialManifest?.issuer?.id) {
+      const missingCredentialManifestIssuerIdErrMsg: string = getErrMsg({
+        scenario: ErrorMsgSubjectScenarioEnum.MissingCredentialManifestIssuerId,
       });
-      console.error(missingDataProfileIssuerIdErrMsg);
-      throw new Error(missingDataProfileIssuerIdErrMsg);
+      console.error(missingCredentialManifestIssuerIdErrMsg);
+      throw new Error(missingCredentialManifestIssuerIdErrMsg);
     }
   }
 
@@ -219,7 +216,7 @@ class Portabl {
     accessToken: string,
   ): {
     correlationIdEncrypted: string;
-    dataProfileId: string;
+    dataProfileVersion: string;
   } {
     this.validateAccessToken(accessToken);
 
@@ -230,72 +227,70 @@ class Portabl {
 
     this.validateCorrelationId(correlationIdEncrypted);
 
-    const dataProfileId: string =
-      accessTokenClaims[DATA_PROFILE_ID_CUSTOM_CLAIM];
+    const dataProfileVersion: string =
+      accessTokenClaims[DATA_PROFILE_VERSION_CUSTOM_CLAIM];
 
-    this.validateDataProfileId(dataProfileId);
+    // this.validateDataProfileVersion(dataProfileVersion);
 
     if (this.debug) {
       console.debug(
         '(2) parsed access token claims',
-        JSON.stringify({ correlationIdEncrypted, dataProfileId }, null, 2),
+        JSON.stringify({ correlationIdEncrypted, dataProfileVersion }, null, 2),
       );
     }
 
-    return { correlationIdEncrypted, dataProfileId };
+    return { correlationIdEncrypted, dataProfileVersion };
   }
 
-  private async getDataProfile({
+  private async getCredentialManifest({
     goal,
-    dataProfileId,
+    dataProfileVersion,
   }: {
     goal: DIDCommGoalEnum;
-    dataProfileId?: string;
+    dataProfileVersion: string;
   }): Promise<ICredentialManifestModel> {
-    const dataProfileModel: ICredentialManifestModel = dataProfileId
-      ? await this.portabl.agent.getCredentialManifestById(dataProfileId)
-      : await this.portabl.agent.getCredentialManifestByGoal(goal);
+    const credentialManifestModel: ICredentialManifestModel =
+      await this.portabl.agent.getCredentialManifestByQuery({
+        query: {
+          goal,
+          ...(dataProfileVersion ? { version: dataProfileVersion } : { latestVersion: true }),
+        },
+      });
 
     if (this.debug) {
-      console.debug(
-        '(1) get data profile',
-        JSON.stringify(dataProfileModel, null, 2),
-      );
+      console.debug('(1) get credential manifest model', JSON.stringify(credentialManifestModel, null, 2));
     }
 
-    return dataProfileModel;
+    return credentialManifestModel;
   }
 
   private buildCredential(opts: {
     claims: IKYCClaimsInput;
     evidences: Array<IEvidence> | undefined;
-    dataProfile: ICredentialManifest;
+    credentialManifest: ICredentialManifest;
   }): IVerifiableCredential {
-    const { claims, evidences, dataProfile } = opts;
-    const filteredClaims = filterClaims({
+    const { claims, evidences, credentialManifest } = opts;
+    const filteredClaims: IKYCClaimsInput = filterClaims({
       claims,
-      outputDescriptors: dataProfile.output_descriptors,
+      outputDescriptors: credentialManifest.output_descriptors,
     });
 
-    const claimsWithTypes = transformClaimsWithTypes(filteredClaims);
+    const credentialSubjectWithTypes: IKYCClaims = setJsonldTypesForCredentialSubject(filteredClaims);
 
-    this.validateClaims(claimsWithTypes);
+    this.validateCredentialSubject(credentialSubjectWithTypes);
     this.validateEvidences(evidences);
-    this.validateDataProfile(dataProfile);
-    this.validateDataProfileIssuerId(dataProfile);
+    this.validateCredentialManifest(credentialManifest);
+    this.validateCredentialManifestIssuerId(credentialManifest);
 
     const credential: IVerifiableCredential = credentialFrom({
       '@context': [KYC_VOCAB_URL],
-      type: [VKYC_VOCAB_TERM],
+      type: [VKYC_CREDENTIAL_VOCAB_TERM],
       issuer: {
-        id: dataProfile.issuer.id,
+        id: credentialManifest.issuer.id,
       },
-      credentialSubject: claimsWithTypes,
+      credentialSubject: credentialSubjectWithTypes,
+      evidence: evidences,
     });
-
-    if (Array.isArray(evidences) && evidences.length) {
-      credential.evidence = evidences;
-    }
 
     if (this.debug) {
       console.debug(
@@ -307,36 +302,35 @@ class Portabl {
     return credential;
   }
 
-  private async storeCredential(opts: {
+  private async storeCredential(args: {
     correlationIdEncrypted: string;
-    dataProfile: ICredentialManifest;
+    credentialManifest: ICredentialManifest;
     credential: IVerifiableCredential;
-  }): Promise<ICredential> {
-    const { correlationIdEncrypted, dataProfile, credential } = opts;
+  }): Promise<ICredentialDocumentModel> {
+    const { correlationIdEncrypted, credentialManifest, credential } = args;
 
     this.validateCorrelationId(correlationIdEncrypted);
-    this.validateDataProfile(dataProfile);
+    this.validateCredentialManifest(credentialManifest);
     this.validateCredential(credential);
 
-    const credentialModel: ICredentialDocumentModel = await this.portabl.agent.storeCredential(
+    const credentialDocumentModel: ICredentialDocumentModel = await this.portabl.agent.storeCredential(
       {
         document: credential,
         meta: {
           correlationId: correlationIdEncrypted,
-          credentialManifestId: dataProfile.id,
+          credentialManifestId: credentialManifest.id,
         },
       },
     );
-    const { document } = credentialModel;
 
     if (this.debug) {
       console.debug(
-        '(7) stored credential document',
-        JSON.stringify(document, null, 2),
+        '(7) stored credential document model',
+        JSON.stringify(credentialDocumentModel, null, 2),
       );
     }
 
-    return document;
+    return credentialDocumentModel;
   }
 }
 

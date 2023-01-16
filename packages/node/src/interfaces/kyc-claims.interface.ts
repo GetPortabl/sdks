@@ -1,37 +1,41 @@
 export interface IKYCRegistrationAddressDetailsInput {
-  country?: string;
-  postalCode?: string;
-  region?: string;
-  locality?: string;
-  streetAddress?: string;
+  readonly country?: string;
+  readonly postalCode?: string;
+  readonly region?: string;
+  readonly locality?: string;
+  readonly streetAddress?: string;
 }
 
 export interface IKYCRegistrationAddressDetails
   extends IKYCRegistrationAddressDetailsInput {
-  type: 'RegistrationAddressDetails';
+  readonly type: 'RegistrationAddressDetails';
 }
 
 export interface IKYCClaimsInput {
-  emailAddress?: string;
-  phoneNumber?: string;
+  readonly emailAddress?: string;
+  readonly phoneNumber?: string;
 
-  firstName?: string;
-  middleName?: string;
-  lastName?: string;
-  honorificPrefix?: string;
-  honorificSuffix?: string;
+  readonly firstName?: string;
+  readonly middleName?: string;
+  readonly lastName?: string;
+  readonly honorificPrefix?: string;
+  readonly honorificSuffix?: string;
 
-  birthDate?: string;
-  birthPlace?: string;
+  readonly birthDate?: string;
+  readonly birthPlace?: string;
 
-  nationality?: string;
+  readonly nationality?: string;
 
-  socialSecurityNumber?: string;
+  readonly passportNumber?: string;
 
-  registrationAddressDetails?: IKYCRegistrationAddressDetailsInput;
+  readonly driverLicenseId?: string;
+
+  readonly socialSecurityNumber?: string;
+
+  readonly registrationAddressDetails?: IKYCRegistrationAddressDetailsInput;
 }
 
 export interface IKYCClaims extends IKYCClaimsInput {
-  type: 'vKYC';
-  registrationAddressDetails?: IKYCRegistrationAddressDetails;
+  readonly type: 'vKYCCredential';
+  readonly registrationAddressDetails?: IKYCRegistrationAddressDetails;
 }

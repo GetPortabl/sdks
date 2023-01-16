@@ -17,6 +17,7 @@ export const credentialFrom = (
     type,
     id,
     issuanceDate,
+    evidence,
     ...restData
   } = data || {};
 
@@ -31,6 +32,7 @@ export const credentialFrom = (
     }),
     id: id || URN_UUID_PREFIX + uuid4(),
     issuanceDate: issuanceDate || toRFC3339(new Date()),
+    ...(Array.isArray(evidence) && evidence.length ? { evidence } : {}),
     ...restData,
   } as IVerifiableCredential;
 };

@@ -1,20 +1,20 @@
-import { VKYC_VOCAB_TERM } from '../constants';
+import { VKYC_CREDENTIAL_VOCAB_TERM, REGISTRATION_ADDRESS_DETAILS_VOCAB_TERM } from '../constants';
 import { IKYCClaims, IKYCClaimsInput } from '../interfaces';
 
-export const transformClaimsWithTypes = (
+export const setJsonldTypesForCredentialSubject = (
   claims: IKYCClaimsInput,
 ): IKYCClaims => {
-  const transformedClaims = {
-    ...claims,
-    type: VKYC_VOCAB_TERM,
-  } as IKYCClaims;
+  const { registrationAddressDetails, ...restClaims } = claims;
 
-  if (transformedClaims.registrationAddressDetails) {
-    transformedClaims.registrationAddressDetails = {
-      ...claims.registrationAddressDetails,
-      type: 'RegistrationAddressDetails',
-    };
-  }
+  return {
+    ...restClaims,
+    type: VKYC_CREDENTIAL_VOCAB_TERM,
+    ...(registrationAddressDetails ? {
+      registrationAddressDetails: {
+        ...claims.registrationAddressDetails,
+        type: REGISTRATION_ADDRESS_DETAILS_VOCAB_TERM,
+      }
+    } : {}),
 
-  return transformedClaims;
+  };
 };

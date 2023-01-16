@@ -31,21 +31,21 @@ export interface IFieldV2 extends FieldV2 {
 export type IField = IFieldV1 | IFieldV2;
 
 export interface IConstraintsV1 extends ConstraintsV1 {
-  fields?: Array<IFieldV1>;
+  readonly fields?: Array<IFieldV1>;
 }
 
 export interface IConstraintsV2 extends ConstraintsV2 {
-  fields?: Array<IFieldV2>;
+  readonly fields?: Array<IFieldV2>;
 }
 
 export type IConstraints = IConstraintsV1 | IConstraintsV2;
 
 export interface IInputDescriptorV1 extends InputDescriptorV1 {
-  constraints?: IConstraintsV1;
+  readonly constraints?: IConstraintsV1;
 }
 
 export interface IInputDescriptorV2 extends InputDescriptorV2 {
-  constraints?: IConstraintsV2;
+  readonly constraints?: IConstraintsV2;
 }
 
 export type IInputDescriptor = IInputDescriptorV1 | IInputDescriptorV2;
@@ -53,24 +53,24 @@ export type IInputDescriptor = IInputDescriptorV1 | IInputDescriptorV2;
 export interface ISubmissionRequirement extends SubmissionRequirement {}
 
 export interface IPresentationDefinitionV1 {
-  id: string;
-  name?: string;
-  purpose?: string;
-  format?: ClaimFormatObjectType;
-  submission_requirements?: Array<ISubmissionRequirement>;
-  input_descriptors: Array<IInputDescriptorV1>;
+  readonly id: string;
+  readonly name?: string;
+  readonly purpose?: string;
+  readonly format?: ClaimFormatObjectType;
+  readonly submission_requirements?: Array<ISubmissionRequirement>;
+  readonly input_descriptors: Array<IInputDescriptorV1>;
 }
 
 // Note: it's being described here since:
 // - "input_descriptors.constraints.fields.*.filter" requires extension with "const" property
 export interface IPresentationDefinitionV2 {
-  id: string;
-  name?: string;
-  purpose?: string;
-  format?: ClaimFormatObjectType;
-  submission_requirements?: Array<ISubmissionRequirement>;
-  input_descriptors: Array<IInputDescriptorV2>;
-  frame?: object;
+  readonly id: string;
+  readonly name?: string;
+  readonly purpose?: string;
+  readonly format?: ClaimFormatObjectType;
+  readonly submission_requirements?: Array<ISubmissionRequirement>;
+  readonly input_descriptors: Array<IInputDescriptorV2>;
+  readonly frame?: object;
 }
 
 export type IPresentationDefinition =

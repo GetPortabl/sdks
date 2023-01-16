@@ -1,21 +1,16 @@
 import axios, { AxiosResponse } from 'axios';
-import jwtDecode from 'jwt-decode';
 
 import { AuthApiClient } from './auth-api.client';
 import { getErrMsg } from '../utils/get-error-messag.util';
 import { buildApiHeaders } from '../utils/build-api-headers.util';
 import { ErrorMsgTemplateEnum } from '../enums/error-message-type.enum';
 import { ErrorMsgSubjectEntityEnum } from '../enums/error-message-entity.enum';
-import {
-  AGENT_ROUTE,
-  API_VERSION_ROUTE,
-  TENANT_ID_CUSTOM_CLAIM,
-} from '../constants';
+import { agentUrlFrom } from '../utils/agent-url-from.util';
 
 export class AgentApiBaseClient {
   readonly authApiClient: AuthApiClient;
 
-  readonly agentUrlFromAccessToken: (accessToken: string) => string;
+  readonly agentUrl: string;
 
   accessToken: string | null = null;
 
@@ -26,12 +21,7 @@ export class AgentApiBaseClient {
     const { audience } = authApiClient;
 
     this.authApiClient = authApiClient;
-    this.agentUrlFromAccessToken = accessToken => {
-      const accessTokenClaims: any = jwtDecode(accessToken);
-      const tenantId = accessTokenClaims[TENANT_ID_CUSTOM_CLAIM];
-
-      return `${audience}${API_VERSION_ROUTE}${AGENT_ROUTE}/${tenantId}`;
-    };
+    this.agentUrl = agentUrlFrom({ audience });
   }
 
   private async getAccessToken(): Promise<string> {
@@ -63,11 +53,7 @@ export class AgentApiBaseClient {
 
       const accessToken: string = await this.getAccessToken();
 
-      const agentUrl = this.agentUrlFromAccessToken(accessToken);
-
-      const url: string = `${agentUrl}${relativeUrl}`;
-
-      response = await axios.post(url, data, {
+      response = await axios.post(`${this.agentUrl}${relativeUrl}`, data, {
         headers: buildApiHeaders({ headers, accessToken }),
       });
     } catch (error) {
@@ -94,11 +80,7 @@ export class AgentApiBaseClient {
 
       const accessToken: string = await this.getAccessToken();
 
-      const agentUrl = this.agentUrlFromAccessToken(accessToken);
-
-      const url: string = `${agentUrl}${relativeUrl}`;
-
-      response = await axios.put(url, data, {
+      response = await axios.put(`${this.agentUrl}${relativeUrl}`, data, {
         headers: buildApiHeaders({ headers, accessToken }),
       });
     } catch (error) {
@@ -127,11 +109,7 @@ export class AgentApiBaseClient {
 
       const accessToken: string = await this.getAccessToken();
 
-      const agentUrl = this.agentUrlFromAccessToken(accessToken);
-
-      const url: string = `${agentUrl}${relativeUrl}`;
-
-      response = await axios.get(url, {
+      response = await axios.get(`${this.agentUrl}${relativeUrl}`, {
         headers: buildApiHeaders({ headers, accessToken }),
       });
     } catch (error) {

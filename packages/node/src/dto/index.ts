@@ -1,3 +1,5 @@
+export * from './authenticate-backup.dto';
+export * from './load-backup-data.dto';
 export * from './create-did-comm-jwm-request.dto';
 export * from './create-did-comm-jwm-response.dto';
 export * from './get-credential-manifests-response.dto';

@@ -6,6 +6,7 @@ export * from './credential-from.util';
 export * from './get-error-messag.util';
 export * from './rount-to-int.util';
 export * from './singular-or-array.util';
+export * from './to-query-params.utils';
 export * from './to-rfc3999.util';
 export * from './filter-claims.util';
 export * from './provider-url-from.util';

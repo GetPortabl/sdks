@@ -2640,6 +2640,11 @@
     nanoid "^3.3.4"
     string.prototype.matchall "^4.0.7"
 
+"@sphereon/ssi-types@^0.8.0":
+  version "0.8.0"
+  resolved "https://registry.yarnpkg.com/@sphereon/ssi-types/-/ssi-types-0.8.0.tgz#6571c9e156f96d262a6fe2ee84bf7f24ffbd2cda"
+  integrity sha512-HyKmg7x+8r8aS60siuyAtZ/zgIFFIk17VMg3wczz4nd2ZyRuefPDSe+6Bm15bmijGxm+FYqNeZku+fwAnoKV/g==
+
 "@tootallnate/once@1":
   version "1.1.2"
   resolved "https://registry.yarnpkg.com/@tootallnate/once/-/once-1.1.2.tgz#ccb91445360179a04e7fe6aff78c00ffc1eeaf82"

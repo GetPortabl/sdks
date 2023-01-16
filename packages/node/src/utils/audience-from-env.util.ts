@@ -10,7 +10,6 @@ import { ErrorMsgSubjectScenarioEnum } from '../enums/error-message-entity.enum'
 export function audienceFromEnv(env: EnvType) {
   const envAudiences = {
     dev: `${HTTPS}://${env}-${PORTABL_API_SUBDOMAIN_BASE}.${PORTABL_API_DOMAIN}`,
-    sandbox: `${HTTPS}://${env}-${PORTABL_API_SUBDOMAIN_BASE}.${PORTABL_API_DOMAIN}`,
     production: `${HTTPS}://${PORTABL_API_SUBDOMAIN_BASE}.${PORTABL_API_DOMAIN}`,
   };
 

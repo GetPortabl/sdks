@@ -8,7 +8,7 @@ export interface IGetTokenArgs {
 
 export interface ICustomClaims {
   readonly correlationId: string;
-  readonly dataProfileId?: string;
+  readonly dataProfileVersion?: string;
 }
 
 export interface IGetClientTokenRequestBodtDto
