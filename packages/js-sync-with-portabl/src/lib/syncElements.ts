@@ -1,4 +1,5 @@
 import PortablLogo from '../assets/images/portabl-logo.svg';
+import SyncCheckedIcon from '../assets/images/sync-checked-icon.svg';
 
 export function createContainer(
   header: HTMLElement,
@@ -24,7 +25,7 @@ export function createContainer(
 
 export function createHeader(
   portablTitle: HTMLElement,
-  tooltip: HTMLElement,
+  tooltip: HTMLAnchorElement,
 ): HTMLElement {
   const header = document.createElement('div');
   header.style.display = 'flex';
@@ -34,15 +35,34 @@ export function createHeader(
   return header;
 }
 
-export function createPortablLogo(): HTMLElement {
+export function createSyncCheckedIcon(): HTMLElement {
+  const syncCheckedIcon = document.createElement('img');
+  syncCheckedIcon.src = SyncCheckedIcon;
+  return syncCheckedIcon;
+}
+
+export function updateHeader(header: HTMLElement, isSyncOn: boolean): void {
+  const tooltip = header.querySelector('a');
+
+  if (isSyncOn) {
+    if (tooltip) {
+      tooltip.style.display = 'none';
+    }
+    const newSyncCheckedIcon = createSyncCheckedIcon();
+    header.appendChild(newSyncCheckedIcon);
+  } else if (tooltip) {
+    tooltip.style.display = 'block';
+  }
+}
+
+export function createPortablLogo(): HTMLImageElement {
   const portablLogo = document.createElement('img');
   portablLogo.src = PortablLogo;
-
   return portablLogo;
 }
 
-export function createTooltip(): HTMLElement {
-  const tooltip = document.createElement('span');
+export function createTooltip(): HTMLAnchorElement {
+  const tooltip = document.createElement('a');
   tooltip.textContent = "What's this?";
   tooltip.style.position = 'relative';
   tooltip.style.cursor = 'pointer';
@@ -51,31 +71,11 @@ export function createTooltip(): HTMLElement {
   tooltip.style.borderRadius = '18px';
   tooltip.style.backgroundColor = '#F3F3F4';
   tooltip.style.fontWeight = '600';
-
-  const tooltipText = document.createElement('span');
-  tooltipText.textContent = 'Lorem Ipsum lorem ipsum lorem ipsum';
-  tooltipText.style.visibility = 'hidden';
-  tooltipText.style.width = '200px';
-  tooltipText.style.textAlign = 'center';
-  tooltipText.style.padding = '8px 0';
-  tooltipText.style.position = 'absolute';
-  tooltipText.style.zIndex = '1';
-  tooltipText.style.bottom = '35px';
-  tooltipText.style.left = '-50px';
-  tooltipText.style.transition = 'opacity 0.3s';
-
-  tooltip.appendChild(tooltipText);
-
-  tooltip.addEventListener('mouseenter', () => {
-    tooltipText.style.visibility = 'visible';
-    tooltipText.style.opacity = '1';
-  });
-
-  tooltip.addEventListener('mouseleave', () => {
-    tooltipText.style.visibility = 'hidden';
-    tooltipText.style.opacity = '0';
-  });
-
+  tooltip.style.textDecoration = 'none';
+  tooltip.style.outline = 'none';
+  tooltip.style.color = '#000';
+  tooltip.target = '_blank';
+  tooltip.href = 'https://getportabl.com';
   return tooltip;
 }
 
@@ -98,13 +98,36 @@ export function createSyncButton(): HTMLButtonElement {
   syncButton.style.color = '#fff';
   syncButton.style.fontWeight = '600';
   syncButton.style.cursor = 'pointer';
+  syncButton.style.fontSize = '13px';
+  syncButton.style.transition = 'transform 0.2s ease-in-out';
 
   syncButton.textContent = 'Sync with Portabl';
+
+  syncButton.addEventListener('mouseover', () => {
+    syncButton.style.transform = 'scale(1.02)';
+  });
+
+  syncButton.addEventListener('mouseout', () => {
+    syncButton.style.transform = 'scale(1)';
+  });
+
+  syncButton.addEventListener('mousedown', () => {
+    syncButton.style.transform = 'scale(.98)';
+  });
+
+  syncButton.addEventListener('mouseup', () => {
+    syncButton.style.transform = 'scale(1)';
+  });
+
+  syncButton.addEventListener('focus', () => {
+    syncButton.style.outline = '#F1E7FE';
+  });
+
   return syncButton;
 }
 
-export function createViewDataButton(): HTMLButtonElement {
-  const viewDataButton = document.createElement('button');
+export function createViewDataButton(passportUrl: string): HTMLAnchorElement {
+  const viewDataButton = document.createElement('a');
   viewDataButton.style.boxSizing = 'border-box';
   viewDataButton.style.background = '#000';
   viewDataButton.style.padding = '13px 17px';
@@ -113,8 +136,33 @@ export function createViewDataButton(): HTMLButtonElement {
   viewDataButton.style.color = '#fff';
   viewDataButton.style.fontWeight = '600';
   viewDataButton.style.cursor = 'pointer';
+  viewDataButton.style.textDecoration = 'none';
+  viewDataButton.style.outline = 'none';
+  viewDataButton.style.fontSize = '13px';
 
   viewDataButton.textContent = 'View your data';
+  viewDataButton.href = passportUrl;
+
+  viewDataButton.addEventListener('mouseover', () => {
+    viewDataButton.style.transform = 'scale(1.02)';
+  });
+
+  viewDataButton.addEventListener('mouseout', () => {
+    viewDataButton.style.transform = 'scale(1)';
+  });
+
+  viewDataButton.addEventListener('mousedown', () => {
+    viewDataButton.style.transform = 'scale(.98)';
+  });
+
+  viewDataButton.addEventListener('mouseup', () => {
+    viewDataButton.style.transform = 'scale(1)';
+  });
+
+  viewDataButton.addEventListener('focus', () => {
+    viewDataButton.style.outline = '#F1E7FE';
+  });
+
   return viewDataButton;
 }
 
@@ -131,6 +179,13 @@ export function createModal(): HTMLElement {
   modal.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
   modal.style.zIndex = '1000';
   modal.style.overflow = 'auto';
+
+  modal.addEventListener('click', event => {
+    if (event.target === modal) {
+      modal.style.display = 'none';
+    }
+  });
+
   return modal;
 }
 
@@ -138,7 +193,8 @@ export function createIframe(url: string): HTMLIFrameElement {
   const iframe = document.createElement('iframe');
   iframe.src = url;
   iframe.style.border = 'none';
-  iframe.style.width = '500px';
+  iframe.style.width = '550px';
   iframe.style.height = '600px';
+  iframe.style.padding = '20px';
   return iframe;
 }
