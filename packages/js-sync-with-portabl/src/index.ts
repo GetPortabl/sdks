@@ -1,5 +1,6 @@
 import { Auth0Client, createAuth0Client } from '@auth0/auth0-spa-js';
 import { Options } from './lib/types';
+import { environments } from './lib/environments';
 import {
   createContainer,
   createHeader,
@@ -10,13 +11,14 @@ import {
   createViewDataButton,
   createModal,
   createIframe,
+  updateHeader,
 } from './lib/syncElements';
 
 export async function createSyncWithPortabl(
   options: Options,
 ): Promise<HTMLElement> {
-  const { domain, audience, clientId, passportUrl, getPrereqs, onUserConsent } =
-    options;
+  const { env, clientId, getPrereqs, onUserConsent, name } = options;
+  const { domain, audience, passportUrl, syncAcceptUrl } = environments[env];
 
   let auth0Client: Auth0Client | null = null;
   let isPassportReady = false;
@@ -35,11 +37,8 @@ export async function createSyncWithPortabl(
     return Promise.reject(error);
   }
 
-  const isAuthenticated = await auth0Client.isAuthenticated();
-  const { isSynced, datapoints } = await getPrereqs();
-
   const syncButton = createSyncButton();
-  const viewDataButton = createViewDataButton();
+  const viewDataButton = createViewDataButton(passportUrl);
   const modal = createModal();
   const iframe = createIframe(`${passportUrl}/sync`);
   const description = createDescription();
@@ -53,30 +52,33 @@ export async function createSyncWithPortabl(
     viewDataButton,
   );
 
-  if (isAuthenticated && isSynced) {
-    syncButton.style.display = 'none';
-    viewDataButton.style.display = 'block';
-  } else {
-    syncButton.style.display = 'block';
-    viewDataButton.style.display = 'none';
-  }
+  syncButton.style.display = 'block';
+  viewDataButton.style.display = 'none';
 
   syncButton.addEventListener('click', async () => {
-    if (!isAuthenticated) {
-      await auth0Client?.loginWithPopup();
-    }
+    const isAuthenticated = await auth0Client?.isAuthenticated();
+    const { isSyncOn, datapoints } = await getPrereqs();
 
-    syncButton.style.display = 'none';
-    modal.style.display = 'flex';
+    if (isAuthenticated && isSyncOn) {
+      syncButton.style.display = 'none';
+      viewDataButton.style.display = 'block';
+      updateHeader(header, isSyncOn);
+    } else {
+      modal.style.display = 'flex';
 
-    if (isPassportReady) {
-      iframe.contentWindow?.postMessage(
-        {
-          action: 'sync:request-ack',
-          payload: datapoints.map((x: any) => x.kind),
-        },
-        '*',
-      );
+      if (!isAuthenticated) {
+        await auth0Client?.loginWithPopup();
+      }
+
+      if (isPassportReady) {
+        iframe.contentWindow?.postMessage(
+          {
+            action: 'sync:request-ack',
+            payload: datapoints.map((x: any) => x.kind),
+          },
+          '*',
+        );
+      }
     }
   });
 
@@ -84,10 +86,25 @@ export async function createSyncWithPortabl(
     switch (event.data.action) {
       case 'sync:acked': {
         if (event.origin !== passportUrl) return;
-        await onUserConsent();
+        const invitationUrl = await onUserConsent();
+        const syncAcceptUrlEndpoint =
+          typeof syncAcceptUrl === 'function'
+            ? syncAcceptUrl(name || '')
+            : syncAcceptUrl;
+
+        await fetch(syncAcceptUrlEndpoint, {
+          headers: {
+            'Content-Type': 'application/json',
+            authorization: `Bearer ${await auth0Client?.getTokenSilently()}`,
+          },
+          method: 'POST',
+          body: JSON.stringify({ invitationUrl }),
+        });
+
         modal.style.display = 'none';
         syncButton.style.display = 'none';
         viewDataButton.style.display = 'block';
+        updateHeader(header, true);
         break;
       }
 
@@ -107,7 +124,6 @@ export async function createSyncWithPortabl(
   });
 
   modal.appendChild(iframe);
-
   const el = document.createElement('div');
   el.appendChild(container);
   el.appendChild(modal);
