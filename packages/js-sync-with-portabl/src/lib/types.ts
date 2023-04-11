@@ -1,12 +1,10 @@
 export interface Options {
-  domain: string;
-  audience: string;
+  env: 'local' | 'dev' | 'production';
+  name?: string;
   clientId: string;
-  passportUrl: string;
   getPrereqs: () => Promise<{
-    isSynced: boolean;
+    isSyncOn: boolean;
     datapoints: Array<Record<string, any>>;
   }>;
-
   onUserConsent: () => Promise<void>;
 }
