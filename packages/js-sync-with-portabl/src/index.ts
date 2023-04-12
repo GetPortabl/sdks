@@ -65,6 +65,7 @@ export async function createSyncWithPortabl(options: Options): Promise<void> {
   if (isAuthenticated && isSyncOn) {
     syncButton.style.display = 'none';
     viewDataButton.style.display = 'block';
+    updateHeader(header, true);
     updateDescription(description, true);
   } else {
     syncButton.style.display = 'block';
