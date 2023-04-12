@@ -60,6 +60,8 @@ export function updateDescription(
   isSyncOn: boolean,
 ): void {
   const newDescription = document.createElement('p');
+  newDescription.style.textAlign = 'left';
+  newDescription.style.padding = '0 8px';
   newDescription.textContent =
     'Congrats! Your financial identity data is now linked with Portabl.';
 
@@ -97,6 +99,7 @@ export function createDescription(): HTMLElement {
   description.textContent =
     'Manage all your financial identity data in one place with Portabl.';
   description.style.textAlign = 'left';
+  description.style.padding = '0 8px';
   return description;
 }
 
