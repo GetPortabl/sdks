@@ -9,7 +9,7 @@ export interface Options {
     };
   };
   clientId: string;
-  rootSelector: string;
+  rootSelector?: string;
   getPrereqs: () => Promise<{
     isSyncOn: boolean;
     datapoints: Array<Record<string, any>>;
