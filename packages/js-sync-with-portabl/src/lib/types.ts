@@ -1,5 +1,5 @@
 export interface Options {
-  env: 'local' | 'dev' | 'production';
+  env: 'dev' | 'production';
   envOverride: {
     local: {
       domain: string;
