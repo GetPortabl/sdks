@@ -1,6 +1,6 @@
 export interface Options {
   env: 'dev' | 'production';
-  envOverride: {
+  envOverride?: {
     local: {
       domain: string;
       audience: string;
