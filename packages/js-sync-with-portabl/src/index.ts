@@ -1,6 +1,6 @@
 import { Auth0Client, createAuth0Client } from '@auth0/auth0-spa-js';
 import { Options } from './lib/types';
-import { environments } from './lib/environments';
+import { environments as defaultEnv } from './lib/environments';
 import {
   createContainer,
   createHeader,
@@ -12,12 +12,19 @@ import {
   createModal,
   createIframe,
   updateHeader,
+  updateDescription,
 } from './lib/syncElements';
 
-export async function createSyncWithPortabl(
-  options: Options,
-): Promise<HTMLElement> {
-  const { env, clientId, getPrereqs, onUserConsent, name } = options;
+export async function createSyncWithPortabl(options: Options): Promise<void> {
+  const {
+    env,
+    envOverride,
+    clientId,
+    getPrereqs,
+    onUserConsent,
+    rootSelector,
+  } = options;
+  const environments = { ...defaultEnv, ...envOverride };
   const { domain, audience, passportUrl, syncAcceptUrl } = environments[env];
 
   let auth0Client: Auth0Client | null = null;
@@ -37,6 +44,9 @@ export async function createSyncWithPortabl(
     return Promise.reject(error);
   }
 
+  const isAuthenticated = await auth0Client?.isAuthenticated();
+  const { isSyncOn, datapoints } = await getPrereqs();
+
   const syncButton = createSyncButton();
   const viewDataButton = createViewDataButton(passportUrl);
   const modal = createModal();
@@ -52,33 +62,30 @@ export async function createSyncWithPortabl(
     viewDataButton,
   );
 
-  syncButton.style.display = 'block';
-  viewDataButton.style.display = 'none';
+  if (isAuthenticated && isSyncOn) {
+    syncButton.style.display = 'none';
+    viewDataButton.style.display = 'block';
+    updateDescription(description, true);
+  } else {
+    syncButton.style.display = 'block';
+    viewDataButton.style.display = 'none';
+  }
 
   syncButton.addEventListener('click', async () => {
-    const isAuthenticated = await auth0Client?.isAuthenticated();
-    const { isSyncOn, datapoints } = await getPrereqs();
+    modal.style.display = 'flex';
 
-    if (isAuthenticated && isSyncOn) {
-      syncButton.style.display = 'none';
-      viewDataButton.style.display = 'block';
-      updateHeader(header, isSyncOn);
-    } else {
-      modal.style.display = 'flex';
+    if (!isAuthenticated) {
+      await auth0Client?.loginWithPopup();
+    }
 
-      if (!isAuthenticated) {
-        await auth0Client?.loginWithPopup();
-      }
-
-      if (isPassportReady) {
-        iframe.contentWindow?.postMessage(
-          {
-            action: 'sync:request-ack',
-            payload: datapoints.map((x: any) => x.kind),
-          },
-          '*',
-        );
-      }
+    if (isPassportReady) {
+      iframe.contentWindow?.postMessage(
+        {
+          action: 'sync:request-ack',
+          payload: datapoints.map((x: any) => x.kind),
+        },
+        '*',
+      );
     }
   });
 
@@ -87,12 +94,7 @@ export async function createSyncWithPortabl(
       case 'sync:acked': {
         if (event.origin !== passportUrl) return;
         const invitationUrl = await onUserConsent();
-        const syncAcceptUrlEndpoint =
-          typeof syncAcceptUrl === 'function'
-            ? syncAcceptUrl(name || '')
-            : syncAcceptUrl;
-
-        await fetch(syncAcceptUrlEndpoint, {
+        await fetch(syncAcceptUrl, {
           headers: {
             'Content-Type': 'application/json',
             authorization: `Bearer ${await auth0Client?.getTokenSilently()}`,
@@ -105,6 +107,7 @@ export async function createSyncWithPortabl(
         syncButton.style.display = 'none';
         viewDataButton.style.display = 'block';
         updateHeader(header, true);
+        updateDescription(description, true);
         break;
       }
 
@@ -127,5 +130,18 @@ export async function createSyncWithPortabl(
   const el = document.createElement('div');
   el.appendChild(container);
   el.appendChild(modal);
-  return el;
+
+  if (rootSelector) {
+    const rootNode = document.querySelector(rootSelector);
+    if (rootNode) {
+      rootNode.appendChild(el);
+    } else {
+      console.warn('Root element not found. Appending to body.');
+      document.body.appendChild(el);
+    }
+  } else {
+    document.body.appendChild(el);
+  }
+
+  return undefined;
 }
