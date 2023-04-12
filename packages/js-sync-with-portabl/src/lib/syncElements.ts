@@ -55,6 +55,19 @@ export function updateHeader(header: HTMLElement, isSyncOn: boolean): void {
   }
 }
 
+export function updateDescription(
+  description: HTMLElement,
+  isSyncOn: boolean,
+): void {
+  const newDescription = document.createElement('p');
+  newDescription.textContent =
+    'Congrats! Your financial identity data is now linked with Portabl.';
+
+  if (isSyncOn) {
+    description.replaceWith(newDescription);
+  }
+}
+
 export function createPortablLogo(): HTMLImageElement {
   const portablLogo = document.createElement('img');
   portablLogo.src = PortablLogo;
