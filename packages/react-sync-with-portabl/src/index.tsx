@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from 'react';
+import { useEffect } from 'react';
 import { createSyncWithPortabl } from '@portabl/js-sync-with-portabl';
 
 interface SyncWithPortablProps {
@@ -11,6 +11,7 @@ interface SyncWithPortablProps {
       syncAcceptUrl: string;
     };
   };
+  rootSelector?: string;
   clientId: string;
   getPrereqs: () => Promise<{
     isSyncOn: boolean;
@@ -22,33 +23,32 @@ interface SyncWithPortablProps {
 const SyncWithPortabl = ({
   env,
   envOverride,
+  rootSelector,
   clientId,
   getPrereqs,
   onUserConsent,
 }: SyncWithPortablProps) => {
-  const syncWrapperRef = useRef<HTMLDivElement | null>(null);
-
   useEffect(() => {
     (async () => {
-      if (syncWrapperRef.current) {
-        await createSyncWithPortabl({
-          env,
-          envOverride,
-          clientId,
-          getPrereqs,
-          onUserConsent,
-        });
-      }
+      await createSyncWithPortabl({
+        env,
+        envOverride,
+        rootSelector,
+        clientId,
+        getPrereqs,
+        onUserConsent,
+      });
     })();
 
     return () => {
-      if (syncWrapperRef.current) {
-        syncWrapperRef.current.innerHTML = '';
+      const rootNode = document.getElementById(rootSelector || '');
+      if (rootNode) {
+        rootNode.remove();
       }
     };
-  }, [env, clientId]);
+  }, [env, rootSelector, clientId]);
 
-  return <div ref={syncWrapperRef} />;
+  return null;
 };
 
 export default SyncWithPortabl;
