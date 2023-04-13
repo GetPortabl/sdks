@@ -2,22 +2,27 @@ import React, { useRef, useEffect } from 'react';
 import { createSyncWithPortabl } from '@portabl/js-sync-with-portabl';
 
 interface SyncWithPortablProps {
-  domain: string;
-  audience: string;
+  env: 'dev' | 'production';
+  envOverride?: {
+    local: {
+      domain: string;
+      audience: string;
+      passportUrl: string;
+      syncAcceptUrl: string;
+    };
+  };
   clientId: string;
-  passportUrl: string;
   getPrereqs: () => Promise<{
-    isSynced: boolean;
+    isSyncOn: boolean;
     datapoints: Array<Record<string, any>>;
   }>;
   onUserConsent: () => Promise<void>;
 }
 
 const SyncWithPortabl = ({
-  domain,
-  audience,
+  env,
+  envOverride,
   clientId,
-  passportUrl,
   getPrereqs,
   onUserConsent,
 }: SyncWithPortablProps) => {
@@ -26,16 +31,13 @@ const SyncWithPortabl = ({
   useEffect(() => {
     (async () => {
       if (syncWrapperRef.current) {
-        const syncWithPortablElement = await createSyncWithPortabl({
-          domain,
-          audience,
+        await createSyncWithPortabl({
+          env,
+          envOverride,
           clientId,
-          passportUrl,
           getPrereqs,
           onUserConsent,
         });
-
-        syncWrapperRef.current.appendChild(syncWithPortablElement);
       }
     })();
 
@@ -44,7 +46,7 @@ const SyncWithPortabl = ({
         syncWrapperRef.current.innerHTML = '';
       }
     };
-  }, [domain, audience, clientId, passportUrl]);
+  }, [env, clientId]);
 
   return <div ref={syncWrapperRef} />;
 };
