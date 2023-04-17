@@ -209,8 +209,9 @@ export function createIframe(url: string): HTMLIFrameElement {
   const iframe = document.createElement('iframe');
   iframe.src = url;
   iframe.style.border = 'none';
-  iframe.style.width = '550px';
+  iframe.style.width = '390px';
   iframe.style.height = '600px';
-  iframe.style.padding = '20px';
+  iframe.style.borderRadius = '18px';
+  iframe.style.boxShadow = '0px 3px 14px rgba(0, 0, 0, 0.11)';
   return iframe;
 }

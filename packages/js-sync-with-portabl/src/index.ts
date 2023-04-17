@@ -119,6 +119,7 @@ export async function createSyncWithPortabl(options: Options): Promise<void> {
 
       case 'sync:passport-closed': {
         isPassportReady = false;
+        modal.style.display = 'none';
         break;
       }
 
