@@ -1,5 +1,6 @@
 import PortablLogo from '../assets/images/portabl-logo.svg';
 import SyncCheckedIcon from '../assets/images/sync-checked-icon.svg';
+import PortablLogoError from '../assets/images/portabl-logo-error.svg';
 
 export function createContainer(
   header: HTMLElement,
@@ -24,13 +25,13 @@ export function createContainer(
 }
 
 export function createHeader(
-  portablTitle: HTMLElement,
+  portablLogo: HTMLElement,
   tooltip: HTMLAnchorElement,
 ): HTMLElement {
   const header = document.createElement('div');
   header.style.display = 'flex';
   header.style.justifyContent = 'space-between';
-  header.appendChild(portablTitle);
+  header.appendChild(portablLogo);
   header.appendChild(tooltip);
   return header;
 }
@@ -83,7 +84,7 @@ export function createTooltip(): HTMLAnchorElement {
   tooltip.style.cursor = 'pointer';
   tooltip.style.fontSize = '10px';
   tooltip.style.padding = '10px 17px 11px';
-  tooltip.style.borderRadius = '18px';
+  tooltip.style.borderRadius = '20px';
   tooltip.style.backgroundColor = '#F3F3F4';
   tooltip.style.fontWeight = '600';
   tooltip.style.textDecoration = 'none';
@@ -109,7 +110,7 @@ export function createSyncButton(): HTMLButtonElement {
   syncButton.style.background =
     'linear-gradient(90deg, #f4266b 0, #c602e5 50%, #8600fa)';
   syncButton.style.padding = '13px 17px';
-  syncButton.style.borderRadius = '18px';
+  syncButton.style.borderRadius = '20px';
   syncButton.style.border = 'none';
   syncButton.style.color = '#fff';
   syncButton.style.fontWeight = '600';
@@ -147,7 +148,7 @@ export function createViewDataButton(passportUrl: string): HTMLAnchorElement {
   viewDataButton.style.boxSizing = 'border-box';
   viewDataButton.style.background = '#000';
   viewDataButton.style.padding = '13px 17px';
-  viewDataButton.style.borderRadius = '18px';
+  viewDataButton.style.borderRadius = '20px';
   viewDataButton.style.border = 'none';
   viewDataButton.style.color = '#fff';
   viewDataButton.style.fontWeight = '600';
@@ -223,4 +224,41 @@ export function createIframe(url: string): HTMLIFrameElement {
   }
 
   return iframe;
+}
+
+export function createErrorContainer(): HTMLElement {
+  const errorContainer = document.createElement('div');
+  errorContainer.style.maxWidth = '350px';
+  errorContainer.style.height = '200px';
+  errorContainer.style.padding = '16px';
+  errorContainer.style.display = 'flex';
+  errorContainer.style.flexDirection = 'column';
+  errorContainer.style.justifyContent = 'space-around';
+  errorContainer.style.borderRadius = '18px';
+  errorContainer.style.boxShadow = '0px 3px 14px rgba(0, 0, 0, 0.11)';
+
+  const header = document.createElement('div');
+  header.style.display = 'flex';
+
+  const portablLogo = document.createElement('img');
+  portablLogo.src = PortablLogoError;
+  header.appendChild(portablLogo);
+
+  const description = document.createElement('p');
+  description.textContent = 'Shucks... \nWe hit an issue loading this widget.';
+  description.style.textAlign = 'left';
+  description.style.padding = '0 8px';
+
+  errorContainer.appendChild(header);
+  errorContainer.appendChild(description);
+
+  const errorDisabledButton = document.createElement('button');
+  errorDisabledButton.style.boxSizing = 'border-box';
+  errorDisabledButton.style.background = 'rgba(0, 0, 0, 0.06)';
+  errorDisabledButton.style.height = '40px';
+  errorDisabledButton.style.borderRadius = '20px';
+  errorDisabledButton.style.border = '1px solid rgba(0, 0, 0, 0.06)';
+  errorContainer.appendChild(errorDisabledButton);
+
+  return errorContainer;
 }
