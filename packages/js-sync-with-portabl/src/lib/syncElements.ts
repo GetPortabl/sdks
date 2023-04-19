@@ -245,7 +245,7 @@ export function createErrorContainer(): HTMLElement {
   header.appendChild(portablLogo);
 
   const description = document.createElement('p');
-  description.textContent = 'Shucks... \nWe hit an issue loading this widget.';
+  description.innerHTML = 'Shucks...<br>We hit an issue loading this widget.';
   description.style.textAlign = 'left';
   description.style.padding = '0 8px';
 

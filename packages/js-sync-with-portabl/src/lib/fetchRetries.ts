@@ -10,7 +10,7 @@ export async function fetchRetries<T>(
   const retry = async (): Promise<T> => {
     try {
       return await fn();
-    } catch (error) {
+    } catch (_) {
       if (retryCount < maxRetry) {
         retryCount += 1;
         delay *= 2;
@@ -19,7 +19,7 @@ export async function fetchRetries<T>(
         });
         return retry();
       }
-      throw new Error('Max retry reached');
+      throw new Error(`Max retry reached.`);
     }
   };
 
