@@ -1,6 +1,7 @@
 import { Auth0Client, createAuth0Client } from '@auth0/auth0-spa-js';
-import { Options } from './lib/types';
+import { Datapoints, Options } from './lib/types';
 import { environments as defaultEnv } from './lib/environments';
+import { fetchRetries } from './lib/fetchRetries';
 import {
   createContainer,
   createHeader,
@@ -13,6 +14,7 @@ import {
   createIframe,
   updateHeader,
   updateDescription,
+  createErrorContainer,
 } from './lib/syncElements';
 
 export async function createSyncWithPortabl(options: Options): Promise<void> {
@@ -29,6 +31,8 @@ export async function createSyncWithPortabl(options: Options): Promise<void> {
 
   let auth0Client: Auth0Client | null = null;
   let isPassportReady = false;
+  let isSyncOn = false;
+  let datapoints: Datapoints[] = [];
 
   try {
     auth0Client = await createAuth0Client({
@@ -45,7 +49,20 @@ export async function createSyncWithPortabl(options: Options): Promise<void> {
   }
 
   const isAuthenticated = await auth0Client?.isAuthenticated();
-  const { isSyncOn, datapoints } = await getPrereqs();
+
+  try {
+    const prereqs = await fetchRetries(getPrereqs, 3);
+    isSyncOn = prereqs.isSyncOn;
+    datapoints = prereqs.datapoints;
+  } catch (error) {
+    console.error('Error getting prerequisites:', error);
+    const errorContainer = createErrorContainer();
+    const rootNode = rootSelector
+      ? document.querySelector(rootSelector)
+      : document.body.appendChild(errorContainer);
+    rootNode?.appendChild(errorContainer);
+    return Promise.reject(error);
+  }
 
   const syncButton = createSyncButton();
   const viewDataButton = createViewDataButton(passportUrl);
