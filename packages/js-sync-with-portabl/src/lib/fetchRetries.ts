@@ -1,3 +1,5 @@
+export const MAX_RETRIES = 3;
+
 export async function fetchRetries<T>(
   fn: () => Promise<T>,
   maxRetry: number,

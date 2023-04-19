@@ -1,7 +1,7 @@
 import { Auth0Client, createAuth0Client } from '@auth0/auth0-spa-js';
 import { Datapoints, Options } from './lib/types';
 import { environments as defaultEnv } from './lib/environments';
-import { fetchRetries } from './lib/fetchRetries';
+import { fetchRetries, MAX_RETRIES } from './lib/fetchRetries';
 import {
   createContainer,
   createHeader,
@@ -51,7 +51,7 @@ export async function createSyncWithPortabl(options: Options): Promise<void> {
   const isAuthenticated = await auth0Client?.isAuthenticated();
 
   try {
-    const prereqs = await fetchRetries(getPrereqs, 3);
+    const prereqs = await fetchRetries(getPrereqs, MAX_RETRIES);
     isSyncOn = prereqs.isSyncOn;
     datapoints = prereqs.datapoints;
   } catch (error) {
