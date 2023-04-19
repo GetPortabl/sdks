@@ -9,7 +9,7 @@ export function createContainer(
   viewDataButton: HTMLElement,
 ): HTMLElement {
   const container = document.createElement('div');
-  container.style.maxWidth = '350px';
+  container.style.width = '350px';
   container.style.height = '200px';
   container.style.padding = '16px';
   container.style.display = 'flex';
@@ -228,7 +228,7 @@ export function createIframe(url: string): HTMLIFrameElement {
 
 export function createErrorContainer(): HTMLElement {
   const errorContainer = document.createElement('div');
-  errorContainer.style.maxWidth = '350px';
+  errorContainer.style.width = '350px';
   errorContainer.style.height = '200px';
   errorContainer.style.padding = '16px';
   errorContainer.style.display = 'flex';
