@@ -8,7 +8,7 @@ export function createContainer(
   viewDataButton: HTMLElement,
 ): HTMLElement {
   const container = document.createElement('div');
-  container.style.width = '350px';
+  container.style.maxWidth = '350px';
   container.style.height = '200px';
   container.style.padding = '16px';
   container.style.display = 'flex';
@@ -213,5 +213,14 @@ export function createIframe(url: string): HTMLIFrameElement {
   iframe.style.height = '600px';
   iframe.style.borderRadius = '18px';
   iframe.style.boxShadow = '0px 3px 14px rgba(0, 0, 0, 0.11)';
+
+  // mobile breakpoint
+  const mobileSize = '(max-width: 490px)';
+  if (window.matchMedia(mobileSize).matches) {
+    iframe.style.width = '100%';
+    iframe.style.height = '100vh';
+    iframe.style.borderRadius = '0';
+  }
+
   return iframe;
 }
