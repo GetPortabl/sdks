@@ -57,10 +57,14 @@ export async function createSyncWithPortabl(options: Options): Promise<void> {
   } catch (error) {
     console.error('Error getting prerequisites:', error);
     const errorContainer = createErrorContainer();
-    const rootNode = rootSelector
-      ? document.querySelector(rootSelector)
-      : document.body.appendChild(errorContainer);
-    rootNode?.appendChild(errorContainer);
+    const rootNode = rootSelector ? document.querySelector(rootSelector) : null;
+
+    if (rootNode) {
+      rootNode.appendChild(errorContainer);
+    } else {
+      document.body.appendChild(errorContainer);
+    }
+
     return Promise.reject(error);
   }
 
