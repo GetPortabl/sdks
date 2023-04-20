@@ -15,7 +15,7 @@ export async function fetchRetries<T>(
         retryCount += 1;
         delay *= 2;
         await new Promise(resolve => {
-          setTimeout(resolve, delay);
+          setTimeout(() => resolve(undefined), delay);
         });
         return retry();
       }
