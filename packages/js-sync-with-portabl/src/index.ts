@@ -115,22 +115,39 @@ export async function createSyncWithPortabl(options: Options): Promise<void> {
     switch (event.data.action) {
       case 'sync:acked': {
         if (event.origin !== passportUrl) return;
-        const invitationUrl = await onUserConsent();
-        await fetch(syncAcceptUrl, {
-          headers: {
-            'Content-Type': 'application/json',
-            authorization: `Bearer ${await auth0Client?.getTokenSilently()}`,
-          },
-          method: 'POST',
-          body: JSON.stringify({ invitationUrl }),
-        });
 
-        modal.style.display = 'none';
-        syncButton.style.display = 'none';
-        viewDataButton.style.display = 'block';
-        updateHeader(header, true);
-        updateDescription(description, true);
-        break;
+        try {
+          const invitationUrl = await fetchRetries(onUserConsent, MAX_RETRIES);
+
+          const onSyncAccept = async () => {
+            await fetch(syncAcceptUrl, {
+              headers: {
+                'Content-Type': 'application/json',
+                authorization: `Bearer ${await auth0Client?.getTokenSilently()}`,
+              },
+              method: 'POST',
+              body: JSON.stringify({ invitationUrl }),
+            });
+          };
+
+          await fetchRetries(onSyncAccept, MAX_RETRIES);
+
+          modal.style.display = 'none';
+          syncButton.style.display = 'none';
+          viewDataButton.style.display = 'block';
+          updateHeader(header, true);
+          updateDescription(description, true);
+          break;
+        } catch (err) {
+          iframe.contentWindow?.postMessage(
+            {
+              action: 'sync:request-error',
+              payload: true,
+            },
+            '*',
+          );
+          break;
+        }
       }
 
       case 'sync:passport-ready': {
