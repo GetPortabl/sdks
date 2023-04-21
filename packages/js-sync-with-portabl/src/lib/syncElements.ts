@@ -1,6 +1,7 @@
 import PortablLogo from '../assets/images/portabl-logo.svg';
 import SyncCheckedIcon from '../assets/images/sync-checked-icon.svg';
 import PortablLogoError from '../assets/images/portabl-logo-error.svg';
+import WarningIcon from '../assets/images/warning-icon.svg';
 
 export function createContainer(
   header: HTMLElement,
@@ -11,7 +12,7 @@ export function createContainer(
   const container = document.createElement('div');
   container.style.width = '350px';
   container.style.height = '200px';
-  container.style.padding = '16px';
+  container.style.padding = '20px';
   container.style.display = 'flex';
   container.style.flexDirection = 'column';
   container.style.justifyContent = 'space-around';
@@ -226,11 +227,13 @@ export function createIframe(url: string): HTMLIFrameElement {
   return iframe;
 }
 
-export function createErrorContainer(): HTMLElement {
+export function createErrorContainer(
+  providerName: string | undefined,
+): HTMLElement {
   const errorContainer = document.createElement('div');
   errorContainer.style.width = '350px';
   errorContainer.style.height = '200px';
-  errorContainer.style.padding = '16px';
+  errorContainer.style.padding = '20px';
   errorContainer.style.display = 'flex';
   errorContainer.style.flexDirection = 'column';
   errorContainer.style.justifyContent = 'space-around';
@@ -252,13 +255,45 @@ export function createErrorContainer(): HTMLElement {
   errorContainer.appendChild(header);
   errorContainer.appendChild(description);
 
-  const errorDisabledButton = document.createElement('button');
-  errorDisabledButton.style.boxSizing = 'border-box';
-  errorDisabledButton.style.background = 'rgba(0, 0, 0, 0.06)';
-  errorDisabledButton.style.height = '40px';
-  errorDisabledButton.style.borderRadius = '20px';
-  errorDisabledButton.style.border = '1px solid rgba(0, 0, 0, 0.06)';
-  errorContainer.appendChild(errorDisabledButton);
+  const errorDisableContainer = document.createElement('div');
+  errorDisableContainer.style.boxSizing = 'border-box';
+  errorDisableContainer.style.display = 'flex';
+  errorDisableContainer.style.justifyContent = 'center';
+  errorDisableContainer.style.alignItems = 'center';
+  errorDisableContainer.style.fontWeight = '500';
+  errorDisableContainer.style.fontSize = '12px';
+  errorDisableContainer.style.background = 'rgba(0, 0, 0, 0.1)';
+  errorDisableContainer.style.height = '40px';
+  errorDisableContainer.style.borderRadius = '10px';
+  errorDisableContainer.style.width = '100%';
+  errorDisableContainer.style.padding = '0 16px';
+
+  const iconContainer = document.createElement('div');
+  iconContainer.style.display = 'flex';
+
+  const icon = document.createElement('img');
+  icon.src = WarningIcon;
+
+  iconContainer.appendChild(icon);
+
+  const contactSupportTextContainer = document.createElement('div');
+  contactSupportTextContainer.style.display = 'flex';
+  contactSupportTextContainer.style.justifyContent = 'center';
+  contactSupportTextContainer.style.flexGrow = '1';
+
+  const contactSupportText = document.createElement('span');
+  contactSupportText.style.alignSelf = 'center';
+
+  if (!providerName) {
+    contactSupportText.innerHTML = `Contact your provider support`;
+  } else {
+    contactSupportText.innerHTML = `Contact ${providerName}`;
+  }
+
+  contactSupportTextContainer.appendChild(contactSupportText);
+  errorDisableContainer.appendChild(iconContainer);
+  errorDisableContainer.appendChild(contactSupportTextContainer);
+  errorContainer.appendChild(errorDisableContainer);
 
   return errorContainer;
 }

@@ -1,4 +1,5 @@
 export interface Options {
+  providerName?: string;
   envOverride?: {
     domain: string;
     audience: string;

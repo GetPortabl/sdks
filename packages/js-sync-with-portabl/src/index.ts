@@ -25,8 +25,14 @@ import {
 } from './lib/syncElements';
 
 export async function createSyncWithPortabl(options: Options): Promise<void> {
-  const { envOverride, clientId, getPrereqs, onUserConsent, rootSelector } =
-    options;
+  const {
+    envOverride,
+    clientId,
+    getPrereqs,
+    onUserConsent,
+    rootSelector,
+    providerName,
+  } = options;
   const environments = {
     ...defaultEnv,
     ...envOverride,
@@ -60,7 +66,7 @@ export async function createSyncWithPortabl(options: Options): Promise<void> {
     datapoints = prereqs.datapoints;
   } catch (error) {
     console.error('Error getting prerequisites:', error);
-    const errorContainer = createErrorContainer();
+    const errorContainer = createErrorContainer(providerName);
     const rootNode = rootSelector ? document.querySelector(rootSelector) : null;
 
     if (rootNode) {
