@@ -1,7 +1,7 @@
 import { Auth0Client, createAuth0Client } from '@auth0/auth0-spa-js';
 import { Datapoints, Options } from './lib/types';
 import { environments as defaultEnv } from './lib/environments';
-import { fetchRetries, MAX_RETRIES } from './lib/fetchRetries';
+import { withRetries, MAX_RETRIES } from './lib/withRetries';
 import {
   createContainer,
   createHeader,
@@ -26,7 +26,10 @@ export async function createSyncWithPortabl(options: Options): Promise<void> {
     onUserConsent,
     rootSelector,
   } = options;
-  const environments = { ...defaultEnv, ...envOverride };
+  const environments = {
+    ...defaultEnv,
+    ...envOverride,
+  };
   const { domain, audience, passportUrl, syncAcceptUrl } = environments[env];
 
   let auth0Client: Auth0Client | null = null;
@@ -51,7 +54,7 @@ export async function createSyncWithPortabl(options: Options): Promise<void> {
   const isAuthenticated = await auth0Client?.isAuthenticated();
 
   try {
-    const prereqs = await fetchRetries(getPrereqs, MAX_RETRIES);
+    const prereqs = await withRetries(getPrereqs, MAX_RETRIES);
     isSyncOn = prereqs.isSyncOn;
     datapoints = prereqs.datapoints;
   } catch (error) {
@@ -117,7 +120,7 @@ export async function createSyncWithPortabl(options: Options): Promise<void> {
         if (event.origin !== passportUrl) return;
 
         try {
-          const invitationUrl = await fetchRetries(onUserConsent, MAX_RETRIES);
+          const invitationUrl = await withRetries(onUserConsent, MAX_RETRIES);
 
           const onSyncAccept = async () => {
             await fetch(syncAcceptUrl, {
@@ -126,11 +129,13 @@ export async function createSyncWithPortabl(options: Options): Promise<void> {
                 authorization: `Bearer ${await auth0Client?.getTokenSilently()}`,
               },
               method: 'POST',
-              body: JSON.stringify({ invitationUrl }),
+              body: JSON.stringify({
+                invitationUrl,
+              }),
             });
           };
 
-          await fetchRetries(onSyncAccept, MAX_RETRIES);
+          await withRetries(onSyncAccept, MAX_RETRIES);
 
           modal.style.display = 'none';
           syncButton.style.display = 'none';
