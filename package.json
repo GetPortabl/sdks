@@ -27,7 +27,7 @@
     "lint-staged": ">=10",
     "prettier": "latest",
     "tsconfig": "*",
-    "turbo": "latest"
+    "turbo": "^1.9.3"
   },
   "engines": {
     "npm": ">=7.0.0",
