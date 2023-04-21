@@ -1,6 +1,7 @@
 import { Auth0Client, createAuth0Client } from '@auth0/auth0-spa-js';
-import { Options } from './lib/types';
+import { Datapoints, Options } from './lib/types';
 import { environments as defaultEnv } from './lib/environments';
+import { withRetries, MAX_RETRIES } from './lib/withRetries';
 import {
   createContainer,
   createHeader,
@@ -13,6 +14,7 @@ import {
   createIframe,
   updateHeader,
   updateDescription,
+  createErrorContainer,
 } from './lib/syncElements';
 
 export async function createSyncWithPortabl(options: Options): Promise<void> {
@@ -24,11 +26,16 @@ export async function createSyncWithPortabl(options: Options): Promise<void> {
     onUserConsent,
     rootSelector,
   } = options;
-  const environments = { ...defaultEnv, ...envOverride };
+  const environments = {
+    ...defaultEnv,
+    ...envOverride,
+  };
   const { domain, audience, passportUrl, syncAcceptUrl } = environments[env];
 
   let auth0Client: Auth0Client | null = null;
   let isPassportReady = false;
+  let isSyncOn = false;
+  let datapoints: Datapoints[] = [];
 
   try {
     auth0Client = await createAuth0Client({
@@ -45,7 +52,24 @@ export async function createSyncWithPortabl(options: Options): Promise<void> {
   }
 
   const isAuthenticated = await auth0Client?.isAuthenticated();
-  const { isSyncOn, datapoints } = await getPrereqs();
+
+  try {
+    const prereqs = await withRetries(getPrereqs, MAX_RETRIES);
+    isSyncOn = prereqs.isSyncOn;
+    datapoints = prereqs.datapoints;
+  } catch (error) {
+    console.error('Error getting prerequisites:', error);
+    const errorContainer = createErrorContainer();
+    const rootNode = rootSelector ? document.querySelector(rootSelector) : null;
+
+    if (rootNode) {
+      rootNode.appendChild(errorContainer);
+    } else {
+      document.body.appendChild(errorContainer);
+    }
+
+    return Promise.reject(error);
+  }
 
   const syncButton = createSyncButton();
   const viewDataButton = createViewDataButton(passportUrl);
@@ -94,22 +118,41 @@ export async function createSyncWithPortabl(options: Options): Promise<void> {
     switch (event.data.action) {
       case 'sync:acked': {
         if (event.origin !== passportUrl) return;
-        const invitationUrl = await onUserConsent();
-        await fetch(syncAcceptUrl, {
-          headers: {
-            'Content-Type': 'application/json',
-            authorization: `Bearer ${await auth0Client?.getTokenSilently()}`,
-          },
-          method: 'POST',
-          body: JSON.stringify({ invitationUrl }),
-        });
 
-        modal.style.display = 'none';
-        syncButton.style.display = 'none';
-        viewDataButton.style.display = 'block';
-        updateHeader(header, true);
-        updateDescription(description, true);
-        break;
+        try {
+          const invitationUrl = await withRetries(onUserConsent, MAX_RETRIES);
+
+          const onSyncAccept = async () => {
+            await fetch(syncAcceptUrl, {
+              headers: {
+                'Content-Type': 'application/json',
+                authorization: `Bearer ${await auth0Client?.getTokenSilently()}`,
+              },
+              method: 'POST',
+              body: JSON.stringify({
+                invitationUrl,
+              }),
+            });
+          };
+
+          await withRetries(onSyncAccept, MAX_RETRIES);
+
+          modal.style.display = 'none';
+          syncButton.style.display = 'none';
+          viewDataButton.style.display = 'block';
+          updateHeader(header, true);
+          updateDescription(description, true);
+          break;
+        } catch (err) {
+          iframe.contentWindow?.postMessage(
+            {
+              action: 'sync:request-error',
+              payload: true,
+            },
+            '*',
+          );
+          break;
+        }
       }
 
       case 'sync:passport-ready': {

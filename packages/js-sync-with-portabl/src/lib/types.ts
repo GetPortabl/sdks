@@ -12,7 +12,19 @@ export interface Options {
   rootSelector?: string;
   getPrereqs: () => Promise<{
     isSyncOn: boolean;
-    datapoints: Array<Record<string, any>>;
+    datapoints: Datapoints[];
   }>;
   onUserConsent: () => Promise<void>;
+}
+
+export interface Datapoints {
+  id: string;
+  kind: string;
+  group: string;
+  label: string;
+  jsonPathArray: string[];
+  jsonSchema: {
+    type: string;
+  };
+  evidenceOptionality?: string;
 }
