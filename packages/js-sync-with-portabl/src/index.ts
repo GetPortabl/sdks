@@ -3,6 +3,13 @@ import { Datapoints, Options } from './lib/types';
 import { environments as defaultEnv } from './lib/environments';
 import { withRetries, MAX_RETRIES } from './lib/withRetries';
 import {
+  SYNC_ACK,
+  SYNC_PASSPORT_CLOSED,
+  SYNC_PASSPORT_READY,
+  SYNC_REQUEST_ACK,
+  SYNC_REQUEST_ERROR,
+} from './lib/constants';
+import {
   createContainer,
   createHeader,
   createPortablLogo,
@@ -18,19 +25,13 @@ import {
 } from './lib/syncElements';
 
 export async function createSyncWithPortabl(options: Options): Promise<void> {
-  const {
-    env,
-    envOverride,
-    clientId,
-    getPrereqs,
-    onUserConsent,
-    rootSelector,
-  } = options;
+  const { envOverride, clientId, getPrereqs, onUserConsent, rootSelector } =
+    options;
   const environments = {
     ...defaultEnv,
     ...envOverride,
   };
-  const { domain, audience, passportUrl, syncAcceptUrl } = environments[env];
+  const { domain, audience, passportUrl, syncAcceptUrl } = environments;
 
   let auth0Client: Auth0Client | null = null;
   let isPassportReady = false;
@@ -106,7 +107,7 @@ export async function createSyncWithPortabl(options: Options): Promise<void> {
     if (isPassportReady) {
       iframe.contentWindow?.postMessage(
         {
-          action: 'sync:request-ack',
+          action: SYNC_REQUEST_ACK,
           payload: datapoints.map((x: any) => x.kind),
         },
         '*',
@@ -116,7 +117,7 @@ export async function createSyncWithPortabl(options: Options): Promise<void> {
 
   window.addEventListener('message', async event => {
     switch (event.data.action) {
-      case 'sync:acked': {
+      case SYNC_ACK: {
         if (event.origin !== passportUrl) return;
 
         try {
@@ -146,7 +147,7 @@ export async function createSyncWithPortabl(options: Options): Promise<void> {
         } catch (err) {
           iframe.contentWindow?.postMessage(
             {
-              action: 'sync:request-error',
+              action: SYNC_REQUEST_ERROR,
               payload: true,
             },
             '*',
@@ -155,12 +156,12 @@ export async function createSyncWithPortabl(options: Options): Promise<void> {
         }
       }
 
-      case 'sync:passport-ready': {
+      case SYNC_PASSPORT_READY: {
         isPassportReady = true;
         break;
       }
 
-      case 'sync:passport-closed': {
+      case SYNC_PASSPORT_CLOSED: {
         isPassportReady = false;
         modal.style.display = 'none';
         break;
