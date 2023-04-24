@@ -18,6 +18,7 @@
   ],
   "dependencies": {
     "@portabl/connect-common": "*",
+    "@vue/compiler-sfc": "^3.2.47",
     "@vueuse/head": "^0.7.6"
   },
   "devDependencies": {
