@@ -26,7 +26,7 @@ const SyncWithPortabl = ({
         syncWrapperRef.current.remove();
       }
     };
-  }, [clientId]);
+  }, [clientId, providerName, envOverride, getPrereqs, onUserConsent]);
 
   return <div ref={syncWrapperRef} />;
 };
