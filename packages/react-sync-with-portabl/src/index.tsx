@@ -11,17 +11,15 @@ const SyncWithPortabl = ({
   const syncWrapperRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
-    (async () => {
-      if (syncWrapperRef.current) {
-        await createSyncWithPortabl({
-          providerName,
-          envOverride,
-          clientId,
-          getPrereqs,
-          onUserConsent,
-        });
-      }
-    })();
+    if (syncWrapperRef.current) {
+      createSyncWithPortabl({
+        providerName,
+        envOverride,
+        clientId,
+        getPrereqs,
+        onUserConsent,
+      });
+    }
 
     return () => {
       if (syncWrapperRef.current) {
