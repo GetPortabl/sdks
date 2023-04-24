@@ -1,35 +1,36 @@
-import { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { createSyncWithPortabl, Options } from '@portabl/js-sync-with-portabl';
 
 const SyncWithPortabl = ({
   providerName,
   envOverride,
   clientId,
-  rootSelector,
   getPrereqs,
   onUserConsent,
 }: Options) => {
+  const syncWrapperRef = useRef<HTMLDivElement | null>(null);
+
   useEffect(() => {
     (async () => {
-      await createSyncWithPortabl({
-        providerName,
-        envOverride,
-        clientId,
-        rootSelector,
-        getPrereqs,
-        onUserConsent,
-      });
+      if (syncWrapperRef.current) {
+        await createSyncWithPortabl({
+          providerName,
+          envOverride,
+          clientId,
+          getPrereqs,
+          onUserConsent,
+        });
+      }
     })();
 
     return () => {
-      const rootNode = document.getElementById(rootSelector || '');
-      if (rootNode) {
-        rootNode.remove();
+      if (syncWrapperRef.current) {
+        syncWrapperRef.current.remove();
       }
     };
-  }, [rootSelector, clientId]);
+  }, [clientId]);
 
-  return null;
+  return <div ref={syncWrapperRef} />;
 };
 
 export default SyncWithPortabl;
