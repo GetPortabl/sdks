@@ -1,7 +1,6 @@
 import { StatusBar } from 'expo-status-bar';
 import { StyleSheet, View, Text } from 'react-native';
 import ConnectWithPortabl from '@portabl/react-native-connect-with-portabl';
-import BackupWithPortabl from '@portabl/react-native-backup-with-portabl';
 
 const styles = StyleSheet.create({
   container: {

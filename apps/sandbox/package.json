@@ -9,9 +9,7 @@
   },
   "dependencies": {
     "@portabl/js-connect-with-portabl": "*",
-    "@portabl/js-backup-with-portabl": "*",
     "@portabl/react-connect-with-portabl": "*",
-    "@portabl/react-backup-with-portabl": "*",
     "axios": "^0.27.2",
     "next": "12.0.8",
     "react": "17.0.2",

@@ -8,8 +8,7 @@
   },
   "dependencies": {
     "vue": "^3.2.25",
-    "@portabl/vue-connect-with-portabl": "*",
-    "@portabl/vue-backup-with-portabl": "*"
+    "@portabl/vue-connect-with-portabl": "*"
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^2.3.3",

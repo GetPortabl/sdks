@@ -2,7 +2,6 @@
 // This starter template is using Vue 3 <script setup> SFCs
 // Check out https://vuejs.org/api/sfc-script-setup.html#script-setup
 import ConnectWithPortabl from '@portabl/vue-connect-with-portabl';
-import BackupWithPortabl from '@portabl/vue-backup-with-portabl';
 
 const redirectUri = 'https://some-url.com';
 const mockAccessToken =
