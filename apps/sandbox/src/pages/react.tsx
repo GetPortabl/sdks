@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import ConnectWithPortabl from '@portabl/react-connect-with-portabl';
-import BackupWithPortabl from '@portabl/react-backup-with-portabl';
 
 const ReactPage = () => {
   const options = {
@@ -9,9 +8,6 @@ const ReactPage = () => {
     credManifestId: 'credManifestId',
   };
   const [providerAccessToken, setProviderAccessToken] = useState<string>('');
-
-  const loadBackupData = () => {};
-  const prepareBackup = async () => ({ accessToken: providerAccessToken });
 
   return (
     <div
@@ -31,12 +27,6 @@ const ReactPage = () => {
         onChange={e => {
           setProviderAccessToken(e.target.value);
         }}
-      />
-      <BackupWithPortabl
-        key={`provider:${providerAccessToken}`}
-        prepareBackup={prepareBackup}
-        loadBackupData={loadBackupData}
-        redirectUri="bank.trust"
       />
       <ConnectWithPortabl {...options} />
     </div>
