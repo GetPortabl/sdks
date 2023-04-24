@@ -1,40 +1,21 @@
 import { useEffect } from 'react';
-import { createSyncWithPortabl } from '@portabl/js-sync-with-portabl';
-
-interface SyncWithPortablProps {
-  env: 'dev' | 'production';
-  envOverride?: {
-    local: {
-      domain: string;
-      audience: string;
-      passportUrl: string;
-      syncAcceptUrl: string;
-    };
-  };
-  rootSelector?: string;
-  clientId: string;
-  getPrereqs: () => Promise<{
-    isSyncOn: boolean;
-    datapoints: Array<Record<string, any>>;
-  }>;
-  onUserConsent: () => Promise<void>;
-}
+import { createSyncWithPortabl, Options } from '@portabl/js-sync-with-portabl';
 
 const SyncWithPortabl = ({
-  env,
+  providerName,
   envOverride,
-  rootSelector,
   clientId,
+  rootSelector,
   getPrereqs,
   onUserConsent,
-}: SyncWithPortablProps) => {
+}: Options) => {
   useEffect(() => {
     (async () => {
       await createSyncWithPortabl({
-        env,
+        providerName,
         envOverride,
-        rootSelector,
         clientId,
+        rootSelector,
         getPrereqs,
         onUserConsent,
       });
@@ -46,7 +27,7 @@ const SyncWithPortabl = ({
         rootNode.remove();
       }
     };
-  }, [env, rootSelector, clientId]);
+  }, [rootSelector, clientId]);
 
   return null;
 };

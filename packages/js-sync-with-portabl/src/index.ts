@@ -197,3 +197,5 @@ export async function createSyncWithPortabl(options: Options): Promise<void> {
 
   return undefined;
 }
+
+export * from './lib/types';
