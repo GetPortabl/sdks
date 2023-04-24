@@ -1,8 +1,0 @@
-{
-  "extends": "tsconfig/expojs.json",
-  "include": ["./src", "dist", "build", "node_modules"],
-  "exclude": [],
-  "compilerOptions": {
-    "declaration": true
-  }
-}
