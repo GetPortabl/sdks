@@ -46,11 +46,12 @@ export async function createSyncWithPortabl(options: Options): Promise<void> {
 
   try {
     auth0Client = await createAuth0Client({
-      cacheLocation: 'localstorage',
       domain,
       clientId,
       authorizationParams: {
         audience,
+        scope: 'sync:data openid',
+        max_age: 0,
       },
     });
   } catch (error) {
