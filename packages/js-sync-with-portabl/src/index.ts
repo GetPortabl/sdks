@@ -93,7 +93,7 @@ export async function createSyncWithPortabl(options: Options): Promise<void> {
     viewDataButton,
   );
 
-  if (isAuthenticated && isSyncOn) {
+  if (isSyncOn) {
     syncButton.style.display = 'none';
     viewDataButton.style.display = 'block';
     updateHeader(header, true);
