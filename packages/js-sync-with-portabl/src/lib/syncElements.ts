@@ -147,6 +147,7 @@ export function createSyncButton(): HTMLButtonElement {
 export function createViewDataButton(passportUrl: string): HTMLAnchorElement {
   const viewDataButton = document.createElement('a');
   viewDataButton.style.boxSizing = 'border-box';
+  viewDataButton.style.textAlign = 'center';
   viewDataButton.style.background = '#000';
   viewDataButton.style.padding = '13px 17px';
   viewDataButton.style.borderRadius = '20px';
