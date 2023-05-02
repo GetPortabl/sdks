@@ -46,11 +46,12 @@ export async function createSyncWithPortabl(options: Options): Promise<void> {
 
   try {
     auth0Client = await createAuth0Client({
-      cacheLocation: 'localstorage',
       domain,
       clientId,
       authorizationParams: {
         audience,
+        scope: 'sync:data openid',
+        max_age: 0,
       },
     });
   } catch (error) {
@@ -186,6 +187,7 @@ export async function createSyncWithPortabl(options: Options): Promise<void> {
   if (rootSelector) {
     const rootNode = document.querySelector(rootSelector);
     if (rootNode) {
+      if (rootNode.hasChildNodes()) rootNode.innerHTML = '';
       rootNode.appendChild(el);
     } else {
       console.warn('Root element not found. Appending to body.');
