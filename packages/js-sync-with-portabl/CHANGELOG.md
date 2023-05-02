@@ -1,5 +1,11 @@
 # @portabl/js-sync-with-portabl
 
+## 0.0.3
+
+### Patch Changes
+
+- 134252f: update auth0 authorization params to include scope and max_age
+
 ## 0.0.2
 
 ### Patch Changes
