@@ -12,7 +12,10 @@ export interface Options {
     isSyncOn: boolean;
     datapoints: Datapoints[];
   }>;
-  onUserConsent: () => Promise<void>;
+  onUserConsent: () => Promise<{
+    isConnected: boolean;
+    invitationUrl?: string;
+  }>;
 }
 
 export interface Datapoints {

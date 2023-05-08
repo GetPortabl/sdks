@@ -128,22 +128,27 @@ export async function createSyncWithPortabl(options: Options): Promise<void> {
         if (event.origin !== passportUrl) return;
 
         try {
-          const invitationUrl = await withRetries(onUserConsent, MAX_RETRIES);
+          const { isConnected, invitationUrl } = await withRetries(
+            onUserConsent,
+            MAX_RETRIES,
+          );
 
-          const onSyncAccept = async () => {
-            await fetch(syncAcceptUrl, {
-              headers: {
-                'Content-Type': 'application/json',
-                authorization: `Bearer ${await auth0Client?.getTokenSilently()}`,
-              },
-              method: 'POST',
-              body: JSON.stringify({
-                invitationUrl,
-              }),
-            });
-          };
+          if (isConnected === false) {
+            const onSyncAccept = async () => {
+              await fetch(syncAcceptUrl, {
+                headers: {
+                  'Content-Type': 'application/json',
+                  authorization: `Bearer ${await auth0Client?.getTokenSilently()}`,
+                },
+                method: 'POST',
+                body: JSON.stringify({
+                  invitationUrl,
+                }),
+              });
+            };
 
-          await withRetries(onSyncAccept, MAX_RETRIES);
+            await withRetries(onSyncAccept, MAX_RETRIES);
+          }
 
           modal.style.display = 'none';
           syncButton.style.display = 'none';
