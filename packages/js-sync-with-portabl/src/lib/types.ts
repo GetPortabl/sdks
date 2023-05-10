@@ -1,18 +1,15 @@
 export interface Options {
   providerName?: string;
-  envOverride?: {
-    domain: string;
-    audience: string;
-    passportUrl: string;
-    syncAcceptUrl: string;
-  };
-  clientId: string;
   rootSelector?: string;
+  widgetBaseUrl?: string;
   getPrereqs: () => Promise<{
     isSyncOn: boolean;
     datapoints: Datapoints[];
   }>;
-  onUserConsent: () => Promise<void>;
+  onUserConsent: () => Promise<{
+    isConnected: boolean;
+    invitationUrl?: string;
+  }>;
 }
 
 export interface Datapoints {

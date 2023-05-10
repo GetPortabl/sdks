@@ -2,9 +2,8 @@ import React, { useEffect, useRef } from 'react';
 import { createSyncWithPortabl, Options } from '@portabl/js-sync-with-portabl';
 
 const SyncWithPortabl = ({
+  widgetBaseUrl,
   providerName,
-  envOverride,
-  clientId,
   getPrereqs,
   onUserConsent,
 }: Options) => {
@@ -13,9 +12,8 @@ const SyncWithPortabl = ({
   useEffect(() => {
     if (syncWrapperRef.current) {
       createSyncWithPortabl({
+        widgetBaseUrl,
         providerName,
-        envOverride,
-        clientId,
         getPrereqs,
         onUserConsent,
       });
@@ -26,7 +24,7 @@ const SyncWithPortabl = ({
         syncWrapperRef.current.remove();
       }
     };
-  }, [clientId, providerName, envOverride, getPrereqs, onUserConsent]);
+  }, [widgetBaseUrl, providerName, getPrereqs, onUserConsent]);
 
   return <div ref={syncWrapperRef} />;
 };
