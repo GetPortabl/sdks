@@ -26,7 +26,7 @@ export async function createSyncWithPortabl(options: Options): Promise<void> {
     getPrereqs,
     onUserConsent,
     rootSelector,
-    providerName,
+    // providerName,
   } = options;
 
   let isWidgetReady = false;
@@ -101,10 +101,10 @@ export async function createSyncWithPortabl(options: Options): Promise<void> {
         if (event.origin !== widgetBaseUrl) return;
 
         try {
-          const { invitationUrl, isConnected } = await withRetries(
-            onUserConsent,
-            MAX_RETRIES,
-          );
+          const {
+            invitationUrl,
+            // isConnected
+          } = await withRetries(onUserConsent, MAX_RETRIES);
 
           // if (isConnected === false) {
           iframeWidget.contentWindow?.postMessage(
