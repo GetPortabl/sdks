@@ -17,7 +17,6 @@
     "dist"
   ],
   "dependencies": {
-    "@auth0/auth0-spa-js": "^2.0.4",
     "jwt-decode": "^3.1.2"
   },
   "devDependencies": {

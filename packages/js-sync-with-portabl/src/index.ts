@@ -1,155 +1,125 @@
-import { Auth0Client, createAuth0Client } from '@auth0/auth0-spa-js';
 import { Datapoints, Options } from './lib/types';
-import { environments as defaultEnv } from './lib/environments';
 import { withRetries, MAX_RETRIES } from './lib/withRetries';
 import {
+  PREREQS_FAILED,
+  PREREQS_SUCCESS,
+  SYNC_ACCEPT_SUCCESS,
   SYNC_ACK,
   SYNC_PASSPORT_CLOSED,
   SYNC_PASSPORT_READY,
+  SYNC_READY,
   SYNC_REQUEST_ACK,
   SYNC_REQUEST_ERROR,
+  USER_AUTHENTICATED,
+  WIDGET_READY,
 } from './lib/constants';
 import {
   createContainer,
-  createHeader,
-  createPortablLogo,
-  createTooltip,
-  createDescription,
-  createSyncButton,
-  createViewDataButton,
   createModal,
   createIframe,
-  updateHeader,
-  updateDescription,
-  createErrorContainer,
+  createIframeWidget,
 } from './lib/syncElements';
 
 export async function createSyncWithPortabl(options: Options): Promise<void> {
   const {
-    envOverride,
-    clientId,
+    widgetBaseUrl = 'https://widgets.getportabl.com',
     getPrereqs,
     onUserConsent,
     rootSelector,
     providerName,
   } = options;
-  const environments = {
-    ...defaultEnv,
-    ...envOverride,
-  };
-  const { domain, audience, passportUrl, syncAcceptUrl } = environments;
 
-  let auth0Client: Auth0Client | null = null;
-  let isPassportReady = false;
+  let isWidgetReady = false;
   let isSyncOn = false;
   let datapoints: Datapoints[] = [];
 
-  try {
-    auth0Client = await createAuth0Client({
-      domain,
-      clientId,
-      authorizationParams: {
-        audience,
-        scope: 'sync:data openid',
-        max_age: 0,
-      },
-    });
-  } catch (error) {
-    console.error('Error creating Auth0 client:', error);
-    return Promise.reject(error);
-  }
-
-  const isAuthenticated = await auth0Client?.isAuthenticated();
+  const iframeWidget = createIframeWidget(`${widgetBaseUrl}/sync-widget`);
+  const modal = createModal();
+  const iframe = createIframe(`${widgetBaseUrl}/sync-modal`);
+  const container = createContainer(iframeWidget);
 
   try {
     const prereqs = await withRetries(getPrereqs, MAX_RETRIES);
+
     isSyncOn = prereqs.isSyncOn;
     datapoints = prereqs.datapoints;
-  } catch (error) {
-    console.error('Error getting prerequisites:', error);
-    const errorContainer = createErrorContainer(providerName);
-    const rootNode = rootSelector ? document.querySelector(rootSelector) : null;
-
-    if (rootNode) {
-      rootNode.appendChild(errorContainer);
-    } else {
-      document.body.appendChild(errorContainer);
-    }
-
-    return Promise.reject(error);
-  }
-
-  const syncButton = createSyncButton();
-  const viewDataButton = createViewDataButton(passportUrl);
-  const modal = createModal();
-  const iframe = createIframe(`${passportUrl}/sync`);
-  const description = createDescription();
-  const tooltip = createTooltip();
-  const portablLogo = createPortablLogo();
-  const header = createHeader(portablLogo, tooltip);
-  const container = createContainer(
-    header,
-    description,
-    syncButton,
-    viewDataButton,
-  );
-
-  if (isSyncOn) {
-    syncButton.style.display = 'none';
-    viewDataButton.style.display = 'block';
-    updateHeader(header, true);
-    updateDescription(description, true);
-  } else {
-    syncButton.style.display = 'block';
-    viewDataButton.style.display = 'none';
-  }
-
-  syncButton.addEventListener('click', async () => {
-    modal.style.display = 'flex';
-
-    if (!isAuthenticated) {
-      await auth0Client?.loginWithPopup();
-    }
-
-    if (isPassportReady) {
-      iframe.contentWindow?.postMessage(
+    if (isWidgetReady) {
+      iframeWidget.contentWindow?.postMessage(
         {
-          action: SYNC_REQUEST_ACK,
-          payload: datapoints.map((x: any) => x.kind),
+          action: PREREQS_SUCCESS,
+          payload: {
+            isSyncOn,
+          },
         },
         '*',
       );
+      container.style.display = 'flex';
     }
-  });
+  } catch (error) {
+    console.error('Error getting prerequisites:', error);
+
+    iframeWidget.contentWindow?.postMessage(
+      {
+        action: PREREQS_FAILED,
+      },
+      '*',
+    );
+  }
 
   window.addEventListener('message', async event => {
     switch (event.data.action) {
+      case WIDGET_READY: {
+        isWidgetReady = true;
+        if (datapoints.length) {
+          iframeWidget.contentWindow?.postMessage(
+            {
+              action: PREREQS_SUCCESS,
+              payload: {
+                isSyncOn,
+              },
+            },
+            '*',
+          );
+        } else {
+          iframeWidget.contentWindow?.postMessage(
+            {
+              action: PREREQS_FAILED,
+            },
+            '*',
+          );
+        }
+        container.style.display = 'flex';
+
+        break;
+      }
+      case SYNC_READY: {
+        modal.style.display = 'flex';
+
+        break;
+      }
       case SYNC_ACK: {
-        if (event.origin !== passportUrl) return;
+        if (event.origin !== widgetBaseUrl) return;
 
         try {
-          const invitationUrl = await withRetries(onUserConsent, MAX_RETRIES);
+          const { invitationUrl, isConnected } = await withRetries(
+            onUserConsent,
+            MAX_RETRIES,
+          );
 
-          const onSyncAccept = async () => {
-            await fetch(syncAcceptUrl, {
-              headers: {
-                'Content-Type': 'application/json',
-                authorization: `Bearer ${await auth0Client?.getTokenSilently()}`,
-              },
-              method: 'POST',
-              body: JSON.stringify({
+          // if (isConnected === false) {
+          iframeWidget.contentWindow?.postMessage(
+            {
+              action: SYNC_ACK,
+              payload: {
                 invitationUrl,
-              }),
-            });
-          };
+              },
+            },
+            '*',
+          );
+          // } else {
+          //   modal.style.display = 'none';
+          // }
 
-          await withRetries(onSyncAccept, MAX_RETRIES);
-
-          modal.style.display = 'none';
-          syncButton.style.display = 'none';
-          viewDataButton.style.display = 'block';
-          updateHeader(header, true);
-          updateDescription(description, true);
           break;
         } catch (err) {
           iframe.contentWindow?.postMessage(
@@ -162,14 +132,25 @@ export async function createSyncWithPortabl(options: Options): Promise<void> {
           break;
         }
       }
-
-      case SYNC_PASSPORT_READY: {
-        isPassportReady = true;
+      case SYNC_ACCEPT_SUCCESS: {
+        modal.style.display = 'none';
         break;
       }
 
+      case SYNC_PASSPORT_READY: {
+        break;
+      }
+      case USER_AUTHENTICATED: {
+        iframe.contentWindow?.postMessage(
+          {
+            action: SYNC_REQUEST_ACK,
+            payload: datapoints.map((x: any) => x.kind),
+          },
+          '*',
+        );
+        break;
+      }
       case SYNC_PASSPORT_CLOSED: {
-        isPassportReady = false;
         modal.style.display = 'none';
         break;
       }
@@ -187,7 +168,6 @@ export async function createSyncWithPortabl(options: Options): Promise<void> {
   if (rootSelector) {
     const rootNode = document.querySelector(rootSelector);
     if (rootNode) {
-      if (rootNode.hasChildNodes()) rootNode.innerHTML = '';
       rootNode.appendChild(el);
     } else {
       console.warn('Root element not found. Appending to body.');

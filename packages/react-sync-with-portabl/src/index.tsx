@@ -3,8 +3,6 @@ import { createSyncWithPortabl, Options } from '@portabl/js-sync-with-portabl';
 
 const SyncWithPortabl = ({
   providerName,
-  envOverride,
-  clientId,
   getPrereqs,
   onUserConsent,
 }: Options) => {
@@ -14,8 +12,6 @@ const SyncWithPortabl = ({
     if (syncWrapperRef.current) {
       createSyncWithPortabl({
         providerName,
-        envOverride,
-        clientId,
         getPrereqs,
         onUserConsent,
       });
@@ -26,7 +22,7 @@ const SyncWithPortabl = ({
         syncWrapperRef.current.remove();
       }
     };
-  }, [clientId, providerName, envOverride, getPrereqs, onUserConsent]);
+  }, [providerName, getPrereqs, onUserConsent]);
 
   return <div ref={syncWrapperRef} />;
 };
