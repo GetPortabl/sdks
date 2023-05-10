@@ -168,6 +168,7 @@ export async function createSyncWithPortabl(options: Options): Promise<void> {
   if (rootSelector) {
     const rootNode = document.querySelector(rootSelector);
     if (rootNode) {
+      if (rootNode.hasChildNodes()) rootNode.innerHTML = '';
       rootNode.appendChild(el);
     } else {
       console.warn('Root element not found. Appending to body.');
