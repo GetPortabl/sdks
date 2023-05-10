@@ -1,5 +1,11 @@
 # @portabl/js-sync-with-portabl
 
+## 0.0.4
+
+### Patch Changes
+
+- b43f775: modify sdk to load widget as an iframe
+
 ## 0.0.3
 
 ### Patch Changes
