@@ -1,5 +1,11 @@
 # @portabl/js-sync-with-portabl
 
+## 0.0.5
+
+### Patch Changes
+
+- ec27efc: revert removal of html
+
 ## 0.0.4
 
 ### Patch Changes
