@@ -1,166 +1,120 @@
-import { Datapoints, Options } from './lib/types';
+import { IframeWidgetClientMesssageType, Options } from './lib/types';
 import { withRetries, MAX_RETRIES } from './lib/withRetries';
 import {
-  PREREQS_FAILED,
-  PREREQS_SUCCESS,
-  SYNC_ACCEPT_SUCCESS,
-  SYNC_ACK,
-  SYNC_PASSPORT_CLOSED,
-  SYNC_PASSPORT_READY,
-  SYNC_READY,
-  SYNC_REQUEST_ACK,
-  SYNC_REQUEST_ERROR,
-  USER_AUTHENTICATED,
-  WIDGET_READY,
+  OutgoingPostMessageEvent,
+  IncomingPostMessageEvent,
 } from './lib/constants';
 import {
   createContainer,
   createModal,
-  createIframe,
+  createIframeModal,
   createIframeWidget,
 } from './lib/syncElements';
+import { createPostMessageSenderClient } from './lib/createPostMessageSendClient';
 
 export async function createSyncWithPortabl(options: Options): Promise<void> {
   const {
     widgetBaseUrl = 'https://widgets.getportabl.com',
-    getPrereqs,
-    onUserConsent,
+    getSyncContext,
+    prepareSync,
     rootSelector,
     // providerName,
   } = options;
 
-  let isWidgetReady = false;
-  let isSyncOn = false;
-  let datapoints: Datapoints[] = [];
-
   const iframeWidget = createIframeWidget(`${widgetBaseUrl}/sync-widget`);
   const modal = createModal();
-  const iframe = createIframe(`${widgetBaseUrl}/sync-modal`);
+  const iframeModal = createIframeModal(`${widgetBaseUrl}/sync-modal`);
   const container = createContainer(iframeWidget);
 
-  try {
-    const prereqs = await withRetries(getPrereqs, MAX_RETRIES);
-
-    isSyncOn = prereqs.isSyncOn;
-    datapoints = prereqs.datapoints;
-    if (isWidgetReady) {
-      iframeWidget.contentWindow?.postMessage(
-        {
-          action: PREREQS_SUCCESS,
-          payload: {
-            isSyncOn,
-          },
-        },
-        '*',
-      );
-      container.style.display = 'flex';
-    }
-  } catch (error) {
-    console.error('Error getting prerequisites:', error);
-
-    iframeWidget.contentWindow?.postMessage(
-      {
-        action: PREREQS_FAILED,
-      },
-      '*',
+  const iframeWidgetClient =
+    createPostMessageSenderClient<IframeWidgetClientMesssageType>(
+      iframeWidget,
+      { targetOrigin: widgetBaseUrl },
     );
+
+  try {
+    const syncContext = await withRetries(getSyncContext, MAX_RETRIES);
+    const { isSessionEstablished, isSyncOn, datapoints, issuerDIDs } =
+      syncContext || {};
+
+    iframeWidgetClient.sendMessage({
+      action: OutgoingPostMessageEvent.SYNC_WIDGET_CONTEXT_LOADED,
+      payload: {
+        isSyncOn,
+        isSessionEstablished,
+        datapoints,
+        issuerDIDs,
+      },
+    });
+  } catch (error) {
+    console.error('Error getting sync context:', error);
+    iframeWidgetClient.sendMessage({
+      action: OutgoingPostMessageEvent.SYNC_WIDGET_ERROR,
+    });
   }
 
-  window.addEventListener('message', async event => {
-    switch (event.data.action) {
-      case WIDGET_READY: {
-        isWidgetReady = true;
-        if (datapoints.length) {
-          iframeWidget.contentWindow?.postMessage(
-            {
-              action: PREREQS_SUCCESS,
+  const handleIncomingMessage = async ({
+    action,
+  }:
+    | {
+        action: IncomingPostMessageEvent.SYNC_CONSENTED;
+      }
+    | { action: IncomingPostMessageEvent.SYNC_WIDGET_READY }
+    | { action: IncomingPostMessageEvent.SYNC_MODAL_OPEN }
+    | { action: IncomingPostMessageEvent.SYNC_MODAL_CLOSED }) => {
+    switch (action) {
+      case IncomingPostMessageEvent.SYNC_CONSENTED: {
+        try {
+          const { invitationUrl, isLinked } = await withRetries(
+            prepareSync,
+            MAX_RETRIES,
+          );
+
+          if (isLinked === false && invitationUrl) {
+            iframeWidgetClient.sendMessage({
+              action: OutgoingPostMessageEvent.SYNC_INVITATION_CREATED,
               payload: {
-                isSyncOn,
+                invitationUrl,
               },
-            },
-            '*',
-          );
-        } else {
-          iframeWidget.contentWindow?.postMessage(
-            {
-              action: PREREQS_FAILED,
-            },
-            '*',
-          );
+            });
+          } else {
+            modal.style.display = 'none';
+          }
+        } catch (err) {
+          iframeWidgetClient.sendMessage({
+            action: OutgoingPostMessageEvent.SYNC_INVITATION_ERROR,
+          });
         }
+        break;
+      }
+      case IncomingPostMessageEvent.SYNC_WIDGET_READY: {
+        console.log('ready');
+        iframeWidgetClient.setIframeToLoaded();
         container.style.display = 'flex';
 
         break;
       }
-      case SYNC_READY: {
+      case IncomingPostMessageEvent.SYNC_MODAL_OPEN: {
         modal.style.display = 'flex';
 
         break;
       }
-      case SYNC_ACK: {
-        if (event.origin !== widgetBaseUrl) return;
-
-        try {
-          const {
-            invitationUrl,
-            // isConnected
-          } = await withRetries(onUserConsent, MAX_RETRIES);
-
-          // if (isConnected === false) {
-          iframeWidget.contentWindow?.postMessage(
-            {
-              action: SYNC_ACK,
-              payload: {
-                invitationUrl,
-              },
-            },
-            '*',
-          );
-          // } else {
-          //   modal.style.display = 'none';
-          // }
-
-          break;
-        } catch (err) {
-          iframe.contentWindow?.postMessage(
-            {
-              action: SYNC_REQUEST_ERROR,
-              payload: true,
-            },
-            '*',
-          );
-          break;
-        }
-      }
-      case SYNC_ACCEPT_SUCCESS: {
+      case IncomingPostMessageEvent.SYNC_MODAL_CLOSED: {
         modal.style.display = 'none';
-        break;
-      }
 
-      case SYNC_PASSPORT_READY: {
-        break;
-      }
-      case USER_AUTHENTICATED: {
-        iframe.contentWindow?.postMessage(
-          {
-            action: SYNC_REQUEST_ACK,
-            payload: datapoints.map((x: any) => x.kind),
-          },
-          '*',
-        );
-        break;
-      }
-      case SYNC_PASSPORT_CLOSED: {
-        modal.style.display = 'none';
         break;
       }
 
       default:
         break;
     }
+  };
+
+  window.addEventListener('message', async event => {
+    handleIncomingMessage(event.data);
   });
 
-  modal.appendChild(iframe);
+  modal.appendChild(iframeModal);
   const el = document.createElement('div');
   el.appendChild(container);
   el.appendChild(modal);

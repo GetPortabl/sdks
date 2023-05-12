@@ -37,10 +37,12 @@ export function createModal(): HTMLElement {
 export function createIframeWidget(url: string): HTMLIFrameElement {
   const iframe = document.createElement('iframe');
   iframe.src = url;
+  iframe.name = 'portabl-sync-widget';
   iframe.style.height = '200px';
   iframe.style.width = '350px';
   iframe.style.border = '0';
   iframe.style.overflow = 'auto';
+  iframe.allow = 'https://local-widgets.getportabl.com:3006';
 
   // mobile breakpoint
   const mobileSize = '(max-width: 490px)';
@@ -53,14 +55,16 @@ export function createIframeWidget(url: string): HTMLIFrameElement {
   return iframe;
 }
 
-export function createIframe(url: string): HTMLIFrameElement {
+export function createIframeModal(url: string): HTMLIFrameElement {
   const iframe = document.createElement('iframe');
   iframe.src = url;
+  iframe.name = 'portabl-sync-modal';
   iframe.style.border = 'none';
   iframe.style.width = '390px';
   iframe.style.height = '600px';
   iframe.style.borderRadius = '18px';
   iframe.style.boxShadow = '0px 3px 14px rgba(0, 0, 0, 0.11)';
+  iframe.allow = 'https://local-widgets.getportabl.com:3006';
 
   // mobile breakpoint
   const mobileSize = '(max-width: 490px)';

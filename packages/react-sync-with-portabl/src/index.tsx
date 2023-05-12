@@ -4,8 +4,8 @@ import { createSyncWithPortabl, Options } from '@portabl/js-sync-with-portabl';
 const SyncWithPortabl = ({
   widgetBaseUrl,
   providerName,
-  getPrereqs,
-  onUserConsent,
+  getSyncContext,
+  prepareSync,
 }: Options) => {
   const syncWrapperRef = useRef<HTMLDivElement | null>(null);
 
@@ -14,8 +14,8 @@ const SyncWithPortabl = ({
       createSyncWithPortabl({
         widgetBaseUrl,
         providerName,
-        getPrereqs,
-        onUserConsent,
+        getSyncContext,
+        prepareSync,
       });
     }
 
@@ -24,7 +24,7 @@ const SyncWithPortabl = ({
         syncWrapperRef.current.remove();
       }
     };
-  }, [widgetBaseUrl, providerName, getPrereqs, onUserConsent]);
+  }, [widgetBaseUrl, providerName, getSelection, prepareSync]);
 
   return <div ref={syncWrapperRef} />;
 };
