@@ -63,6 +63,7 @@ export function createIframeModal(url: string): HTMLIFrameElement {
   iframe.style.height = '600px';
   iframe.style.borderRadius = '18px';
   iframe.style.boxShadow = '0px 3px 14px rgba(0, 0, 0, 0.11)';
+  iframe.style.background = 'white';
 
   // mobile breakpoint
   const mobileSize = '(max-width: 490px)';

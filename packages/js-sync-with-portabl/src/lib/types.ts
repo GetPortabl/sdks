@@ -1,4 +1,7 @@
-import { OutgoingPostMessageEvent } from './constants';
+import {
+  IncomingPostMessageEvent,
+  OutgoingPostMessageEvent,
+} from './constants';
 
 export interface Options {
   providerName?: string;
@@ -36,3 +39,11 @@ export type IframeWidgetClientMesssageType =
   | {
       action: OutgoingPostMessageEvent.SYNC_INVITATION_ERROR;
     };
+
+export type IncomingMessageDataType =
+  | {
+      action: IncomingPostMessageEvent.SYNC_CONSENTED;
+    }
+  | { action: IncomingPostMessageEvent.SYNC_WIDGET_READY }
+  | { action: IncomingPostMessageEvent.SYNC_MODAL_OPEN }
+  | { action: IncomingPostMessageEvent.SYNC_MODAL_CLOSED };

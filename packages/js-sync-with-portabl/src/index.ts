@@ -1,8 +1,13 @@
-import { IframeWidgetClientMesssageType, Options } from './lib/types';
+import {
+  IframeWidgetClientMesssageType,
+  IncomingMessageDataType,
+  Options,
+} from './lib/types';
 import { withRetries, MAX_RETRIES } from './lib/withRetries';
 import {
   OutgoingPostMessageEvent,
   IncomingPostMessageEvent,
+  DEFAULT_ROOT_SELECTOR,
 } from './lib/constants';
 import {
   createContainer,
@@ -12,12 +17,21 @@ import {
 } from './lib/syncElements';
 import { createPostMessageSenderClient } from './lib/createPostMessageSendClient';
 
+// Define message handler outside of create function
+// so that it can be referenced for removal of the previously
+// attached event listener when reinitializing
+let messageHandler: ({
+  data,
+}: {
+  data: IncomingMessageDataType;
+}) => Promise<void>;
+
 export async function createSyncWithPortabl(options: Options): Promise<void> {
   const {
     widgetBaseUrl = 'https://widgets.getportabl.com',
     getSyncContext,
     prepareSync,
-    rootSelector,
+    rootSelector = DEFAULT_ROOT_SELECTOR,
     // providerName,
   } = options;
 
@@ -53,15 +67,8 @@ export async function createSyncWithPortabl(options: Options): Promise<void> {
     });
   }
 
-  const handleIncomingMessage = async ({
-    action,
-  }:
-    | {
-        action: IncomingPostMessageEvent.SYNC_CONSENTED;
-      }
-    | { action: IncomingPostMessageEvent.SYNC_WIDGET_READY }
-    | { action: IncomingPostMessageEvent.SYNC_MODAL_OPEN }
-    | { action: IncomingPostMessageEvent.SYNC_MODAL_CLOSED }) => {
+  messageHandler = async ({ data }: { data: IncomingMessageDataType }) => {
+    const { action } = data;
     switch (action) {
       case IncomingPostMessageEvent.SYNC_CONSENTED: {
         try {
@@ -109,27 +116,33 @@ export async function createSyncWithPortabl(options: Options): Promise<void> {
     }
   };
 
-  window.addEventListener('message', async event => {
-    handleIncomingMessage(event.data);
-  });
-
   modal.appendChild(iframeModal);
   const el = document.createElement('div');
   el.appendChild(container);
   el.appendChild(modal);
 
-  if (rootSelector) {
+  const handleReset = (rootNode: Element) => {
+    if (rootNode) {
+      window.removeEventListener('message', messageHandler);
+      if (rootNode.hasChildNodes()) {
+        // eslint-disable-next-line no-param-reassign
+        rootNode.innerHTML = '';
+      }
+    }
+  };
+
+  const initialize = () => {
     const rootNode = document.querySelector(rootSelector);
     if (rootNode) {
-      if (rootNode.hasChildNodes()) rootNode.innerHTML = '';
+      handleReset(rootNode);
       rootNode.appendChild(el);
+      window.addEventListener('message', messageHandler);
     } else {
-      console.warn('Root element not found. Appending to body.');
-      document.body.appendChild(el);
+      console.error('Root element not found. Appending to body.');
     }
-  } else {
-    document.body.appendChild(el);
-  }
+  };
+
+  initialize();
 
   return undefined;
 }

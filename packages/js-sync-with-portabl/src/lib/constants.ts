@@ -1,3 +1,5 @@
+export const DEFAULT_ROOT_SELECTOR = 'portabl-sync-root';
+
 export enum OutgoingPostMessageEvent {
   SYNC_WIDGET_CONTEXT_LOADED = 'SYNC_WIDGET_CONTEXT_LOADED',
   SYNC_WIDGET_ERROR = 'SYNC_WIDGET_ERROR',
