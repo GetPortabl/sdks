@@ -42,7 +42,6 @@ export function createIframeWidget(url: string): HTMLIFrameElement {
   iframe.style.width = '350px';
   iframe.style.border = '0';
   iframe.style.overflow = 'auto';
-  iframe.allow = 'https://local-widgets.getportabl.com:3006';
 
   // mobile breakpoint
   const mobileSize = '(max-width: 490px)';
@@ -64,7 +63,6 @@ export function createIframeModal(url: string): HTMLIFrameElement {
   iframe.style.height = '600px';
   iframe.style.borderRadius = '18px';
   iframe.style.boxShadow = '0px 3px 14px rgba(0, 0, 0, 0.11)';
-  iframe.allow = 'https://local-widgets.getportabl.com:3006';
 
   // mobile breakpoint
   const mobileSize = '(max-width: 490px)';

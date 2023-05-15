@@ -88,7 +88,6 @@ export async function createSyncWithPortabl(options: Options): Promise<void> {
         break;
       }
       case IncomingPostMessageEvent.SYNC_WIDGET_READY: {
-        console.log('ready');
         iframeWidgetClient.setIframeToLoaded();
         container.style.display = 'flex';
 
