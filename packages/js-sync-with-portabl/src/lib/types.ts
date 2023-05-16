@@ -31,6 +31,9 @@ export type IframeWidgetClientMesssageType =
     }
   | {
       action: OutgoingPostMessageEvent.SYNC_WIDGET_ERROR;
+      payload: {
+        providerName?: string;
+      };
     }
   | {
       action: OutgoingPostMessageEvent.SYNC_INVITATION_CREATED;

@@ -28,7 +28,7 @@ export async function createSyncWithPortabl(options: Options): Promise<void> {
     getSyncContext,
     prepareSync,
     rootSelector = DEFAULT_ROOT_SELECTOR,
-    // providerName,
+    providerName,
   } = options;
 
   const iframeWidget = createIframeWidget(`${widgetBaseUrl}/sync-widget`);
@@ -36,11 +36,9 @@ export async function createSyncWithPortabl(options: Options): Promise<void> {
   const iframeModal = createIframeModal(`${widgetBaseUrl}/sync-modal`);
   const container = createContainer(iframeWidget);
 
-  const iframeWidgetClient =
-    createPostMessageSenderClient<IframeWidgetClientMesssageType>(
-      iframeWidget,
-      { targetOrigin: widgetBaseUrl },
-    );
+  const iframeWidgetClient = createPostMessageSenderClient<
+    IframeWidgetClientMesssageType
+  >(iframeWidget, { targetOrigin: widgetBaseUrl });
 
   try {
     const syncContext = await withRetries(getSyncContext, MAX_RETRIES);
@@ -60,6 +58,9 @@ export async function createSyncWithPortabl(options: Options): Promise<void> {
     console.error('Error getting sync context:', error);
     iframeWidgetClient.sendMessage({
       action: OutgoingPostMessageEvent.SYNC_WIDGET_ERROR,
+      payload: {
+        providerName,
+      },
     });
   }
 
