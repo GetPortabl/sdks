@@ -1,16 +1,15 @@
-// Sending to Widget
-export const WIDGET_READY = 'widget:ready';
-export const PREREQS_SUCCESS = 'prereqs:success';
-export const PREREQS_FAILED = 'prereqs:failed';
+export const DEFAULT_ROOT_SELECTOR = 'portabl-sync-root';
 
-// Sending to Content
-export const SYNC_READY = 'sync:ready';
-export const SYNC_ACK = 'sync:acked';
-export const SYNC_REQUEST_ACK = 'sync:request-ack';
-export const SYNC_REQUEST_ERROR = 'sync:request-error';
-export const SYNC_PASSPORT_READY = 'sync:passport-ready';
-export const SYNC_PASSPORT_CLOSED = 'sync:passport-closed';
+export enum OutgoingPostMessageEvent {
+  SYNC_WIDGET_CONTEXT_LOADED = 'SYNC_WIDGET_CONTEXT_LOADED',
+  SYNC_WIDGET_ERROR = 'SYNC_WIDGET_ERROR',
+  SYNC_INVITATION_CREATED = 'SYNC_INVITATION_CREATED',
+  SYNC_INVITATION_ERROR = 'SYNC_INVITATION_ERROR',
+}
 
-// Coming from widget
-export const SYNC_ACCEPT_SUCCESS = 'sync-accept:success';
-export const USER_AUTHENTICATED = 'user:authenticated';
+export enum IncomingPostMessageEvent {
+  SYNC_CONSENTED = 'SYNC_CONSENTED',
+  SYNC_WIDGET_READY = 'SYNC_WIDGET_READY',
+  SYNC_MODAL_OPEN = 'SYNC_MODAL_OPEN',
+  SYNC_MODAL_CLOSED = 'SYNC_MODAL_CLOSED',
+}
