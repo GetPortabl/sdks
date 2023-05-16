@@ -1,5 +1,11 @@
 # @portabl/js-sync-with-portabl
 
+## 0.0.6
+
+### Patch Changes
+
+- a5f0214: Update props and rework messaging flow
+
 ## 0.0.5
 
 ### Patch Changes
