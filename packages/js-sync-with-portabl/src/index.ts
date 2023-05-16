@@ -15,7 +15,7 @@ import {
   createIframeModal,
   createIframeWidget,
 } from './lib/syncElements';
-import { createPostMessageSenderClient } from './lib/createPostMessageSendClient';
+import { createPostMessageClient } from './lib/createPostMessageClient';
 
 // Define message handler outside of create function
 // so that it can be referenced for removal of the previously
@@ -36,9 +36,10 @@ export async function createSyncWithPortabl(options: Options): Promise<void> {
   const iframeModal = createIframeModal(`${widgetBaseUrl}/sync-modal`);
   const container = createContainer(iframeWidget);
 
-  const iframeWidgetClient = createPostMessageSenderClient<
-    IframeWidgetClientMesssageType
-  >(iframeWidget, { targetOrigin: widgetBaseUrl });
+  const iframeWidgetClient =
+    createPostMessageClient<IframeWidgetClientMesssageType>(iframeWidget, {
+      targetOrigin: widgetBaseUrl,
+    });
 
   try {
     const syncContext = await withRetries(getSyncContext, MAX_RETRIES);

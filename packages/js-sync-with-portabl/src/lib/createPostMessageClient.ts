@@ -10,28 +10,21 @@ interface IMessageQueueItem<TMessageType> {
   targetOrigin: string;
 }
 
-export function createPostMessageSenderClient<
-  TMessageType extends IPostMessage,
->(
+interface IPostMessageClientOptions {
+  targetOrigin?: string;
+}
+
+export function createPostMessageClient<TMessageType extends IPostMessage>(
   iframeEl: HTMLIFrameElement,
-  {
-    targetOrigin: clientTargetOrigin = '*',
-  }: {
-    targetOrigin?: string;
-  } = {
-    targetOrigin: '*',
-  },
+  options: IPostMessageClientOptions,
 ) {
   const messageQueue: IMessageQueueItem<TMessageType>[] = [];
+
+  const { targetOrigin: clientTargetOrigin = '*' } = options || {};
   let isIframeLoaded = false;
 
   const sendMessage = (message: TMessageType, targetOrigin?: string) => {
-    if (
-      isIframeLoaded &&
-      iframeEl &&
-      iframeEl.contentWindow &&
-      iframeEl.contentWindow.postMessage
-    ) {
+    if (isIframeLoaded && iframeEl && iframeEl.contentWindow?.postMessage) {
       iframeEl.contentWindow.postMessage(
         message,
         targetOrigin || clientTargetOrigin,
