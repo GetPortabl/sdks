@@ -20,11 +20,7 @@ import { createPostMessageSenderClient } from './lib/createPostMessageSendClient
 // Define message handler outside of create function
 // so that it can be referenced for removal of the previously
 // attached event listener when reinitializing
-let messageHandler: ({
-  data,
-}: {
-  data: IncomingMessageDataType;
-}) => Promise<void>;
+let messageHandler: (e: MessageEvent<IncomingMessageDataType>) => Promise<void>;
 
 export async function createSyncWithPortabl(options: Options): Promise<void> {
   const {
@@ -67,7 +63,7 @@ export async function createSyncWithPortabl(options: Options): Promise<void> {
     });
   }
 
-  messageHandler = async ({ data }: { data: IncomingMessageDataType }) => {
+  messageHandler = async ({ data }: MessageEvent<IncomingMessageDataType>) => {
     const { action } = data;
     switch (action) {
       case IncomingPostMessageEvent.SYNC_CONSENTED: {
