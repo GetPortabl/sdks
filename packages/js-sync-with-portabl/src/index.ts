@@ -17,23 +17,41 @@ import {
 } from './lib/syncElements';
 import { createPostMessageClient } from './lib/createPostMessageClient';
 
-// Define message handler outside of create function
-// so that it can be referenced for removal of the previously
-// attached event listener when reinitializing
+// Define message handler and rootNode outside of create function
+// so that it can be referenced for removal when reinitializing
 let messageHandler: (e: MessageEvent<IncomingMessageDataType>) => Promise<void>;
+let rootNode: HTMLElement | null;
 
+const handleReset = (
+  previousRootNode: HTMLElement | null,
+  previousMessageHandler: typeof messageHandler,
+) => {
+  // clean up any previously defined messageHandlers
+  window.removeEventListener('message', previousMessageHandler);
+  if (previousRootNode) {
+    if (previousRootNode.hasChildNodes()) {
+      // eslint-disable-next-line no-param-reassign
+      while (previousRootNode.firstChild) {
+        previousRootNode.firstChild.remove();
+      }
+    }
+  }
+};
 export async function createSyncWithPortabl(options: Options): Promise<void> {
   const {
     widgetBaseUrl = 'https://widgets.getportabl.com',
     getSyncContext,
     prepareSync,
-    rootSelector = DEFAULT_ROOT_SELECTOR,
+    root = DEFAULT_ROOT_SELECTOR,
     providerName,
   } = options;
+  // Pass in previously defined rootNode and messageHandler if they exist and perform cleanup.
+  handleReset(rootNode, messageHandler);
+  rootNode = typeof root === 'string' ? document.querySelector(root) : root;
 
   const iframeWidget = createIframeWidget(`${widgetBaseUrl}/sync-widget`);
-  const modal = createModal();
   const iframeModal = createIframeModal(`${widgetBaseUrl}/sync-modal`);
+  const modal = createModal();
   const container = createContainer(iframeWidget);
 
   const iframeWidgetClient =
@@ -41,29 +59,34 @@ export async function createSyncWithPortabl(options: Options): Promise<void> {
       targetOrigin: widgetBaseUrl,
     });
 
-  try {
-    const syncContext = await withRetries(getSyncContext, MAX_RETRIES);
-    const { isSessionEstablished, isSyncOn, datapoints, issuerDIDs } =
-      syncContext || {};
+  const handleGetSyncContext = async () => {
+    try {
+      const syncContext = await withRetries(getSyncContext, MAX_RETRIES);
+      const { isSessionEstablished, isSyncOn, datapoints, issuerDIDs } =
+        syncContext || {};
 
-    iframeWidgetClient.sendMessage({
-      action: OutgoingPostMessageEvent.SYNC_WIDGET_CONTEXT_LOADED,
-      payload: {
-        isSyncOn,
-        isSessionEstablished,
-        datapoints,
-        issuerDIDs,
-      },
-    });
-  } catch (error) {
-    console.error('Error getting sync context:', error);
-    iframeWidgetClient.sendMessage({
-      action: OutgoingPostMessageEvent.SYNC_WIDGET_ERROR,
-      payload: {
-        providerName,
-      },
-    });
-  }
+      iframeWidgetClient.sendMessage({
+        action: OutgoingPostMessageEvent.SYNC_WIDGET_CONTEXT_LOADED,
+        payload: {
+          isSyncOn,
+          isSessionEstablished,
+          datapoints,
+          issuerDIDs,
+        },
+      });
+    } catch (error) {
+      console.error('Error getting sync context:', error);
+      iframeWidgetClient.sendMessage({
+        action: OutgoingPostMessageEvent.SYNC_WIDGET_ERROR,
+        payload: {
+          providerName,
+        },
+      });
+    }
+  };
+
+  // Fire and forget fetching sync context in the main thread
+  handleGetSyncContext();
 
   messageHandler = async ({ data }: MessageEvent<IncomingMessageDataType>) => {
     const { action } = data;
@@ -119,28 +142,12 @@ export async function createSyncWithPortabl(options: Options): Promise<void> {
   el.appendChild(container);
   el.appendChild(modal);
 
-  const handleReset = (rootNode: Element) => {
-    if (rootNode) {
-      window.removeEventListener('message', messageHandler);
-      if (rootNode.hasChildNodes()) {
-        // eslint-disable-next-line no-param-reassign
-        rootNode.innerHTML = '';
-      }
-    }
-  };
-
-  const initialize = () => {
-    const rootNode = document.querySelector(rootSelector);
-    if (rootNode) {
-      handleReset(rootNode);
-      rootNode.appendChild(el);
-      window.addEventListener('message', messageHandler);
-    } else {
-      console.error('Root element not found. Appending to body.');
-    }
-  };
-
-  initialize();
+  if (rootNode) {
+    rootNode.appendChild(el);
+    window.addEventListener('message', messageHandler);
+  } else {
+    console.error('Root element not found. Appending to body.');
+  }
 
   return undefined;
 }

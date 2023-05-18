@@ -5,7 +5,7 @@ import {
 
 export interface Options {
   providerName?: string;
-  rootSelector?: string;
+  root?: string | HTMLDivElement;
   widgetBaseUrl?: string;
   getSyncContext: () => Promise<{
     isSyncOn: boolean;
