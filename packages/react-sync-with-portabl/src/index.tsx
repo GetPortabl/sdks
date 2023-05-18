@@ -7,26 +7,20 @@ const SyncWithPortabl = ({
   getSyncContext,
   prepareSync,
 }: Options) => {
-  const syncWrapperRef = useRef<HTMLDivElement | null>(null);
-
+  const portablSyncRootRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    if (syncWrapperRef.current) {
+    if (portablSyncRootRef.current) {
       createSyncWithPortabl({
+        root: portablSyncRootRef.current,
         widgetBaseUrl,
         providerName,
         getSyncContext,
         prepareSync,
       });
     }
+  }, [widgetBaseUrl, providerName, getSyncContext, prepareSync]);
 
-    return () => {
-      if (syncWrapperRef.current) {
-        syncWrapperRef.current.remove();
-      }
-    };
-  }, [widgetBaseUrl, providerName, getSelection, prepareSync]);
-
-  return <div ref={syncWrapperRef} />;
+  return <div ref={portablSyncRootRef} />;
 };
 
 export default SyncWithPortabl;
