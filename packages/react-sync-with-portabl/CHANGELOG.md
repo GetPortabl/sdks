@@ -1,5 +1,13 @@
 # @portabl/react-sync-with-portabl
 
+## 0.0.4
+
+### Patch Changes
+
+- 950e147: Resolve issues with memory leak on reinitialization
+- Updated dependencies [950e147]
+  - @portabl/js-sync-with-portabl@0.0.7
+
 ## 0.0.3
 
 ### Patch Changes

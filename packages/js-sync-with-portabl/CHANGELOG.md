@@ -1,5 +1,11 @@
 # @portabl/js-sync-with-portabl
 
+## 0.0.7
+
+### Patch Changes
+
+- 950e147: Resolve issues with memory leak on reinitialization
+
 ## 0.0.6
 
 ### Patch Changes
