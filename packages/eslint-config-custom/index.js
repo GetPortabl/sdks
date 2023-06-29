@@ -15,6 +15,7 @@ module.exports = {
     'import/prefer-default-export': 'off',
     'react/jsx-props-no-spreading': 'off',
     'no-console': ['error', { allow: ['warn', 'error', 'debug'] }],
+    'no-underscore-dangle': 'off',
   },
   plugins: ['import'],
   overrides: [
