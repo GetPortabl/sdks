@@ -1,5 +1,11 @@
 # @portabl/js-sync-with-portabl
 
+## 0.0.8
+
+### Patch Changes
+
+- c8120b1: Update name of export to be under sync namespace
+
 ## 0.0.7
 
 ### Patch Changes
