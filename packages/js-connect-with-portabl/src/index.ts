@@ -75,12 +75,17 @@ export class ConnectClient {
       },
     );
 
-    const transaction =
+    const { authRequestUri, ...restTransaction } =
       (await transactionData.json()) as CreateTransactionResponse;
+    const transformedAuthRequestUri = new URL(authRequestUri);
+    const clientId = transformedAuthRequestUri.searchParams.get('client_id');
 
-    this.transactionManager.create({ ...transaction, nonce });
-    const transformedAuthRequestUriParams = new URL(transaction.authRequestUri)
-      .search;
+    if (typeof clientId !== 'string') {
+      throw new Error('Invalid clientId on authRequestUri');
+    }
+
+    this.transactionManager.create({ ...restTransaction, nonce, clientId });
+    const transformedAuthRequestUriParams = transformedAuthRequestUri.search;
 
     window.location.href = `${this.options.walletDomain}/authorize${transformedAuthRequestUriParams}`;
   }
@@ -109,7 +114,7 @@ export class ConnectClient {
     idToken: string;
   }): Promise<GetAccessTokenResponse> {
     const response = await fetch(
-      `/${this.options.connectDomain}/api/v1/agent/${this.options.accountId}/oauth2/token`,
+      `${this.options.connectDomain}/api/v1/agent/${this.options.accountId}/oauth2/token`,
       {
         method: 'POST',
         headers: {
@@ -129,9 +134,11 @@ export class ConnectClient {
   private _validateSingleProof(
     proof: SingleProofType,
     transaction: Transaction,
-    accountId: string,
   ): boolean {
-    return proof.challenge === transaction?.nonce && proof.domain === accountId;
+    return (
+      proof.challenge === transaction?.nonce &&
+      proof.domain === transaction.clientId
+    );
   }
 
   private _validateVpToken(
@@ -145,22 +152,14 @@ export class ConnectClient {
       for (let i = 0; i < proof.length; i += 1) {
         const singleProof = proof[i];
 
-        isValid = this._validateSingleProof(
-          singleProof,
-          transaction,
-          this.options.accountId,
-        );
+        isValid = this._validateSingleProof(singleProof, transaction);
 
         if (!isValid) {
           break;
         }
       }
     } else {
-      isValid = this._validateSingleProof(
-        proof,
-        transaction,
-        this.options.accountId,
-      );
+      isValid = this._validateSingleProof(proof, transaction);
     }
 
     return isValid;
@@ -196,9 +195,6 @@ export class ConnectClient {
       throw new Error('Missing transaction');
     }
 
-    // Remove transaction from cache
-    this.transactionManager.remove();
-
     const { vp_token: vpToken, id_token: idToken } = await this._getResponse(
       responseCode,
     );
@@ -216,6 +212,9 @@ export class ConnectClient {
     }
 
     localStorage.setItem(ID_TOKEN_LOCAL_STORAGE_KEY, idToken);
+
+    // Remove transaction from cache
+    this.transactionManager.remove();
 
     window.history.replaceState({}, document.title, window.location.pathname);
   }
