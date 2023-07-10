@@ -17,8 +17,7 @@
     "dist"
   ],
   "dependencies": {
-    "jwt-decode": "^3.1.2",
-    "qs": "^6.11.2"
+    "jwt-decode": "^3.1.2"
   },
   "devDependencies": {
     "@rollup/plugin-node-resolve": "^13.3.0",

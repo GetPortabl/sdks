@@ -2,10 +2,10 @@ import { TRANSACTION_STORAGE_KEY_PREFIX } from './constants';
 import { ClientStorage } from './storage';
 
 export interface Transaction {
-  authRequestUri: string;
   nonce: string;
   state: string;
   transactionId: string;
+  clientId: string;
 }
 
 export class TransactionManager {
