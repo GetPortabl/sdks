@@ -7,10 +7,12 @@ import image from '@rollup/plugin-image';
 import cssnano from 'cssnano';
 import pkg from './package.json';
 
+const PKG_NAME = 'Portabl.sync';
+
 const cjsOutput = {
   file: pkg.main,
   format: 'cjs',
-  name: 'Portabl',
+  name: PKG_NAME,
   exports: 'named',
 };
 
@@ -23,13 +25,10 @@ const cjsMinOutput = {
 const umdOutput = {
   format: 'umd',
   file: 'dist/index.umd.js',
-  name: 'Portabl',
+  name: PKG_NAME,
   exports: 'named',
   compact: true,
   minifyInternalExports: true,
-  globals: {
-    portabl: 'Portabl',
-  },
 };
 
 const umdMinOutput = {
