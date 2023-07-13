@@ -67,16 +67,16 @@ interface IGetUserResponse {
   };
 }
 
+interface IOnErrorEventArgs {
+  readonly errorMessage: string;
+}
+
 interface ILifeCycleEventOptions {
-  readonly onError?: (args: { readonly errorMessage: string }) => void;
+  readonly onError?: (args: IOnErrorEventArgs) => void;
 }
 
 interface IOptions extends ILifeCycleEventOptions {
   readonly throwsError?: boolean;
-}
-
-interface IOnErrorEventArgs {
-  readonly errorMessage: string;
 }
 
 const transformErrorToOnErrorEventArgs = (error: any): IOnErrorEventArgs => {
