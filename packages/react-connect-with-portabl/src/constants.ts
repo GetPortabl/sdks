@@ -1,5 +1,7 @@
 import { IConnectAuthState } from './types';
 
+export const RESPONSE_CODE_REGEX = /[?&]response_code=[^&]+/;
+
 export const DEFAULT_AUTH_STATE: IConnectAuthState = {
   isLoading: true,
   isAuthenticated: false,

@@ -3,45 +3,51 @@ import jwtDecode from 'jwt-decode';
 import { Transaction, TransactionManager } from './lib/transaction-manager';
 import { SessionStorage } from './lib/storage';
 import { createRandomString } from './lib/random-string';
-import {
-  CONSOLE_LOG_PREFIX,
-  ID_TOKEN_LOCAL_STORAGE_KEY,
-} from './lib/constants';
+import { LOG_PREFIX, ID_TOKEN_LOCAL_STORAGE_KEY } from './lib/constants';
 
 export interface IConnectClientOptions {
-  accountId: string;
-  connectDomain: string;
-  walletDomain: string;
+  readonly accountId: string;
+  readonly connectDomain: string;
+  readonly walletDomain: string;
 }
 
-export type GetAccessTokenResponse = {
-  access_token: string;
-};
-
-type SingleProofType = { challenge: string; domain: string };
-
-type ProofType = SingleProofType | Array<SingleProofType>;
-
-interface IVPToken {
-  proof: ProofType;
+export interface ITokenEndpointResponse {
+  readonly access_token: string;
 }
 
-interface IDecodedIdToken {
-  exp: number;
-  nonce: string;
+interface IChallengeOptions {
+  readonly challenge: string;
+  readonly domain: string;
 }
 
-type GetResponseDataResponse = {
-  id_token: string;
-  vp_token: IVPToken;
-};
+interface ILdProof extends IChallengeOptions {}
 
-type CreateTransactionResponse = {
-  authRequestUri: string;
-  transactionId: string;
-  nonce: string;
-  state: string;
-};
+type LdProofType = ILdProof | Array<ILdProof>;
+
+interface IVpToken {
+  readonly proof: LdProofType;
+}
+
+interface IIdTokenPayload {
+  readonly iat: number;
+  readonly exp: number;
+  readonly iss: string;
+  readonly sub: string;
+  readonly aud: string;
+  readonly nonce: string;
+}
+
+interface IGetAuthResponseDto {
+  readonly id_token: string;
+  readonly vp_token: IVpToken;
+}
+
+interface ICreateTransactionResponse {
+  readonly authRequestUri: string;
+  readonly transactionId: string;
+  readonly nonce: string;
+  readonly state: string;
+}
 
 export class ConnectClient {
   private readonly options: IConnectClientOptions;
@@ -59,215 +65,281 @@ export class ConnectClient {
     );
   }
 
-  async _initiateTransaction(): Promise<void> {
-    const nonce = window.btoa(createRandomString());
+  async loginWithRedirect(): Promise<void> {
+    const nonce: string = window.btoa(createRandomString());
 
-    const transactionData = await fetch(
+    const url: URL = new URL(
       `${this.options.connectDomain}/api/v1/agent/${this.options.accountId}/oauth2/transaction`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          nonce,
-        }),
-      },
     );
 
-    const { authRequestUri, ...restTransaction } =
-      (await transactionData.json()) as CreateTransactionResponse;
-    const transformedAuthRequestUri = new URL(authRequestUri);
-    const clientId = transformedAuthRequestUri.searchParams.get('client_id');
-
-    if (typeof clientId !== 'string') {
-      throw new Error('Invalid clientId on authRequestUri');
-    }
-
-    this.transactionManager.create({ ...restTransaction, nonce, clientId });
-    const transformedAuthRequestUriParams = transformedAuthRequestUri.search;
-
-    window.location.href = `${this.options.walletDomain}/authorize${transformedAuthRequestUriParams}`;
-  }
-
-  private async _getResponse(
-    responseCode: string,
-  ): Promise<GetResponseDataResponse> {
-    const transaction = this.transactionManager.get();
-    if (!transaction) {
-      throw new Error('No Transaction found');
-    }
-
-    const response = await fetch(
-      `${this.options.connectDomain}/api/v1/agent/${this.options.accountId}/oauth2/response?response_code=${responseCode}&transaction_id=${transaction?.transactionId}`,
-      {
-        method: 'GET',
+    const createTransactionResult: Response = await fetch(url.toString(), {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
       },
-    );
+      body: JSON.stringify({
+        nonce,
+      }),
+      // Note: handles error cases via redirect (302) in compliance with https://www.rfc-editor.org/rfc/rfc6749.html#section-4.2.2.1
+      redirect: 'follow',
+    });
 
-    return response.json();
+    this._followRedirect(createTransactionResult);
+
+    const { authRequestUri, transactionId, state }: ICreateTransactionResponse =
+      await createTransactionResult.json();
+
+    const authRequestURL: URL = new URL(authRequestUri);
+
+    const clientId: string | null =
+      authRequestURL.searchParams.get('client_id');
+
+    if (
+      typeof transactionId !== 'string' ||
+      !transactionId ||
+      typeof state !== 'string' ||
+      !state ||
+      typeof clientId !== 'string' ||
+      !clientId
+    ) {
+      throw new Error(
+        `${LOG_PREFIX} invalid transaction params: ${Object.entries({
+          transactionId,
+          state,
+          clientId,
+        })
+          .map(([k, v]) => `${k}=${v}`)
+          .join(' ')}`,
+      );
+    }
+
+    this.transactionManager.create({
+      transactionId,
+      nonce,
+      state,
+      clientId,
+    });
+
+    const authRequestUriQueryParams: string = authRequestURL.search;
+
+    // Note: handles both success and error cases via redirect (302) in compliance with https://www.rfc-editor.org/rfc/rfc6749.html#section-4.2.2.1
+    window.location.href = `${this.options.walletDomain}/authorize${authRequestUriQueryParams}`;
   }
 
-  private async _getAccessTokenFromIdToken({
-    idToken,
+  private async _getAuthResponse({
+    responseCode,
+    transactionId,
   }: {
-    idToken: string;
-  }): Promise<GetAccessTokenResponse> {
-    const response = await fetch(
-      `${this.options.connectDomain}/api/v1/agent/${this.options.accountId}/oauth2/token`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          id_token: idToken,
-          grant_type: 'id_token',
-          scope: 'openid',
-        }),
-      },
+    readonly responseCode: string;
+    readonly transactionId: string;
+  }): Promise<IGetAuthResponseDto> {
+    const qs: string = `?response_code=${responseCode}&transaction_id=${transactionId}`;
+    const url: URL = new URL(
+      `${this.options.connectDomain}/api/v1/agent/${this.options.accountId}/oauth2/response${qs}`,
     );
 
-    return response.json();
+    const getAuthResponseResult: Response = await fetch(url.toString(), {
+      method: 'GET',
+      // Note: handles error cases via redirect (302) in compliance with https://www.rfc-editor.org/rfc/rfc6749.html#section-4.2.2.1
+      redirect: 'follow',
+    });
+
+    this._followRedirect(getAuthResponseResult);
+
+    return getAuthResponseResult.json();
   }
 
-  private _validateSingleProof(
-    proof: SingleProofType,
-    transaction: Transaction,
+  private async _callTokenEndpoint({
+    idTokenJwt,
+  }: {
+    idTokenJwt: string;
+  }): Promise<ITokenEndpointResponse> {
+    const url: URL = new URL(
+      `${this.options.connectDomain}/api/v1/agent/${this.options.accountId}/oauth2/token`,
+    );
+
+    const tokenEndpointResult: Response = await fetch(url.toString(), {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        id_token: idTokenJwt,
+        grant_type: 'id_token',
+        scope: 'openid',
+      }),
+      // Note: handles error cases via redirect (302) in compliance with https://www.rfc-editor.org/rfc/rfc6749.html#section-4.2.2.1
+      redirect: 'follow',
+    });
+
+    this._followRedirect(tokenEndpointResult);
+
+    return tokenEndpointResult.json();
+  }
+
+  private _followRedirect(fetchResult: Response): void {
+    if (
+      fetchResult.ok &&
+      fetchResult.type === 'cors' &&
+      fetchResult.redirected
+    ) {
+      window.location.href = fetchResult.url;
+    }
+  }
+
+  private _isValidVpTokenChallengeOptions(
+    challengeOptions: IChallengeOptions,
+    tx: Transaction,
   ): boolean {
     return (
-      proof.challenge === transaction?.nonce &&
-      proof.domain === transaction.clientId
+      challengeOptions.challenge === tx.nonce &&
+      challengeOptions.domain === tx.clientId
     );
   }
 
-  private _validateVpToken(
-    vpToken: IVPToken,
-    transaction: Transaction,
-  ): boolean {
-    const { proof } = vpToken;
-    let isValid = true;
+  private _isValidateVpToken(vpTokenJwt: IVpToken, tx: Transaction): boolean {
+    const { proof: vpProof }: IVpToken = vpTokenJwt;
 
-    if (Array.isArray(proof)) {
-      for (let i = 0; i < proof.length; i += 1) {
-        const singleProof = proof[i];
-
-        isValid = this._validateSingleProof(singleProof, transaction);
-
-        if (!isValid) {
-          break;
-        }
-      }
-    } else {
-      isValid = this._validateSingleProof(proof, transaction);
-    }
-
-    return isValid;
+    return Array.isArray(vpProof)
+      ? !vpProof.some(
+          (vpProofItem: ILdProof) =>
+            !this._isValidVpTokenChallengeOptions(vpProofItem, tx),
+        )
+      : this._isValidVpTokenChallengeOptions(vpProof, tx);
   }
 
-  private _validateIdToken(idToken: string, transaction: Transaction): boolean {
-    const { nonce } = jwtDecode<IDecodedIdToken>(idToken);
+  private _isExpiredIdToken(idTokenJwt: string): boolean {
+    const idTokenPayload: IIdTokenPayload =
+      jwtDecode<IIdTokenPayload>(idTokenJwt);
 
-    return nonce === transaction?.nonce;
+    return Date.now() >= idTokenPayload.exp * 1000;
   }
 
-  private _checkIfIdTokenIsExpired(decodedIdToken: IDecodedIdToken): boolean {
-    const { exp } = decodedIdToken;
+  private async _isValidIdToken(
+    idTokenJwt: string,
+    tx: Transaction,
+  ): Promise<boolean> {
+    const idTokenPayload: IIdTokenPayload =
+      jwtDecode<IIdTokenPayload>(idTokenJwt);
 
-    return Date.now() >= exp * 1000;
+    const isValidNonce: boolean = idTokenPayload.nonce === tx.nonce;
+    const isSelfSignedJwt: boolean = idTokenPayload.sub === idTokenPayload.iss;
+
+    return isValidNonce && isSelfSignedJwt;
   }
 
   async handleRedirectCallback(
     url: string = window.location.href,
   ): Promise<void> {
-    const [, queryString] = url.split('?');
+    try {
+      const responseCode: string | null = new URL(url).searchParams.get(
+        'response_code',
+      );
 
-    const searchParams = new URLSearchParams(queryString);
-    const responseCode = searchParams.get('response_code');
-    if (!responseCode) {
-      console.warn(`${CONSOLE_LOG_PREFIX} unable to find response code.`);
-      return;
+      if (!responseCode) {
+        console.warn(
+          `${LOG_PREFIX} fetching auth response is not possible as response code is not found`,
+        );
+        return;
+      }
+
+      const tx: Transaction | undefined = this.transactionManager.get();
+
+      if (!tx) {
+        throw new Error(
+          `${LOG_PREFIX} fetching auth response is not possible as transaction is not found`,
+        );
+      }
+
+      const {
+        vp_token: vpTokenJwt,
+        id_token: idTokenJwt,
+      }: IGetAuthResponseDto = await this._getAuthResponse({
+        responseCode,
+        transactionId: tx.transactionId,
+      });
+
+      const isValidIdToken: boolean = await this._isValidIdToken(
+        idTokenJwt,
+        tx,
+      );
+
+      if (!isValidIdToken) {
+        throw new Error(`${LOG_PREFIX} id_token is invalid`);
+      }
+
+      const isValidVpToken: boolean = this._isValidateVpToken(vpTokenJwt, tx);
+
+      if (!isValidVpToken) {
+        throw new Error(`${LOG_PREFIX} vp_token is invalid`);
+      }
+
+      localStorage.setItem(ID_TOKEN_LOCAL_STORAGE_KEY, idTokenJwt);
+
+      // Remove transaction from cache
+      this.transactionManager.remove();
+
+      window.history.replaceState({}, document.title, window.location.pathname);
+    } catch (error) {
+      // Remove transaction from cache (when failed)
+      this.transactionManager.remove();
+
+      throw error;
     }
-
-    const transaction = this.transactionManager.get();
-
-    if (!transaction) {
-      throw new Error('Missing transaction');
-    }
-
-    const { vp_token: vpToken, id_token: idToken } = await this._getResponse(
-      responseCode,
-    );
-
-    const isIdTokenValid = this._validateIdToken(idToken, transaction);
-
-    if (!isIdTokenValid) {
-      throw new Error('Invalid ID Token');
-    }
-
-    const isVpTokenValid = this._validateVpToken(vpToken, transaction);
-
-    if (!isVpTokenValid) {
-      throw new Error('Invalid VP Token');
-    }
-
-    localStorage.setItem(ID_TOKEN_LOCAL_STORAGE_KEY, idToken);
-
-    // Remove transaction from cache
-    this.transactionManager.remove();
-
-    window.history.replaceState({}, document.title, window.location.pathname);
   }
 
-  async getAccessToken() {
-    const idToken = localStorage.getItem(ID_TOKEN_LOCAL_STORAGE_KEY);
-    if (!idToken) {
+  async getAccessToken(): Promise<ITokenEndpointResponse> {
+    const idTokenJwt: string | null = localStorage.getItem(
+      ID_TOKEN_LOCAL_STORAGE_KEY,
+    );
+
+    if (!idTokenJwt) {
       throw new Error(
-        'No id_token is available, can not exchange for access_token',
+        `${LOG_PREFIX} token exchange is not possible as id_token is not found`,
       );
     }
 
-    const decodedIdToken = jwtDecode<IDecodedIdToken>(idToken);
-    const isExpired = this._checkIfIdTokenIsExpired(decodedIdToken);
+    const isExpiredIdToken: boolean = this._isExpiredIdToken(idTokenJwt);
 
-    if (isExpired) {
-      throw new Error('id_token is expired, can not exchange for access_token');
+    if (isExpiredIdToken) {
+      throw new Error(
+        `${LOG_PREFIX} token exchange is not possible as id_token is expired`,
+      );
     }
 
-    const tokenResponse = await this._getAccessTokenFromIdToken({
-      idToken,
-    });
+    const tokenResponse: ITokenEndpointResponse = await this._callTokenEndpoint(
+      {
+        idTokenJwt,
+      },
+    );
 
     return tokenResponse;
   }
 
-  getIsAuthenticated() {
-    if (typeof window !== 'undefined') {
-      const idToken = localStorage.getItem(ID_TOKEN_LOCAL_STORAGE_KEY);
-
-      if (!idToken) {
-        return false;
-      }
-
-      const decodedIdToken = jwtDecode<IDecodedIdToken>(idToken);
-      const isExpired = this._checkIfIdTokenIsExpired(decodedIdToken);
-
-      if (!isExpired) {
-        return true;
-      }
-
-      localStorage.removeItem(ID_TOKEN_LOCAL_STORAGE_KEY);
+  getIsAuthenticated(): boolean {
+    if (typeof window === 'undefined') {
+      return false;
     }
 
-    return false;
+    const idTokenJwt: string | null = localStorage.getItem(
+      ID_TOKEN_LOCAL_STORAGE_KEY,
+    );
+
+    if (!idTokenJwt) {
+      return false;
+    }
+
+    const isExpiredIdToken: boolean = this._isExpiredIdToken(idTokenJwt);
+
+    if (isExpiredIdToken) {
+      localStorage.removeItem(ID_TOKEN_LOCAL_STORAGE_KEY);
+      return false;
+    }
+
+    return true;
   }
 
-  async loginWithRedirect() {
-    // should fire redirect on response
-    await this._initiateTransaction();
-  }
-
-  logout() {
+  logout(): void {
     localStorage.removeItem(ID_TOKEN_LOCAL_STORAGE_KEY);
   }
 }
