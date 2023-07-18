@@ -4,11 +4,7 @@ import { verify as verifyJWT } from 'jsonwebtoken';
 import { Transaction, TransactionManager } from './lib/transaction-manager';
 import { SessionStorage } from './lib/storage';
 import { createRandomString } from './lib/random-string';
-import {
-  ERROR_PREFIX,
-  CONSOLE_LOG_PREFIX,
-  ID_TOKEN_LOCAL_STORAGE_KEY,
-} from './lib/constants';
+import { LOG_PREFIX, ID_TOKEN_LOCAL_STORAGE_KEY } from './lib/constants';
 
 export interface IConnectClientOptions {
   readonly accountId: string;
@@ -137,7 +133,7 @@ export class ConnectClient {
       typeof clientId !== 'string' ||
       !clientId.length
     ) {
-      throw new Error(`${ERROR_PREFIX} invalid transaction params`);
+      throw new Error(`${LOG_PREFIX} invalid transaction params`);
     }
 
     this.transactionManager.create({
@@ -273,7 +269,7 @@ export class ConnectClient {
 
       if (!responseCode) {
         console.warn(
-          `${CONSOLE_LOG_PREFIX} fetching auth response is not possible as response code is not found`,
+          `${LOG_PREFIX} fetching auth response is not possible as response code is not found`,
         );
         return;
       }
@@ -282,7 +278,7 @@ export class ConnectClient {
 
       if (!tx) {
         throw new Error(
-          `${ERROR_PREFIX} fetching auth response is not possible as transaction is not found`,
+          `${LOG_PREFIX} fetching auth response is not possible as transaction is not found`,
         );
       }
 
@@ -300,13 +296,13 @@ export class ConnectClient {
       );
 
       if (!isValidIdToken) {
-        throw new Error(`${ERROR_PREFIX} id_token is invalid`);
+        throw new Error(`${LOG_PREFIX} id_token is invalid`);
       }
 
       const isValidVpToken: boolean = this._isValidateVpToken(vpTokenJwt, tx);
 
       if (!isValidVpToken) {
-        throw new Error(`${ERROR_PREFIX} vp_token is invalid`);
+        throw new Error(`${LOG_PREFIX} vp_token is invalid`);
       }
 
       localStorage.setItem(ID_TOKEN_LOCAL_STORAGE_KEY, idTokenJwt);
@@ -335,16 +331,14 @@ export class ConnectClient {
       const { onError, throwsError } = opts || {};
 
       console.error(
-        `${CONSOLE_LOG_PREFIX} error on handling of a redirect callback`,
+        `${LOG_PREFIX} error on handling of a redirect callback`,
         error,
       );
 
       if (typeof onError === 'function') {
         onError(transformErrorToOnErrorEventArgs(error));
       } else {
-        console.warn(
-          `${CONSOLE_LOG_PREFIX} 'onError' callback was not configured.`,
-        );
+        console.warn(`${LOG_PREFIX} 'onError' callback was not configured.`);
       }
 
       if (throwsError) {
@@ -360,7 +354,7 @@ export class ConnectClient {
 
     if (!idTokenJwt) {
       throw new Error(
-        `${ERROR_PREFIX} token exchange is not possible as id_token is not found`,
+        `${LOG_PREFIX} token exchange is not possible as id_token is not found`,
       );
     }
 
@@ -368,7 +362,7 @@ export class ConnectClient {
 
     if (isExpiredIdToken) {
       throw new Error(
-        `${ERROR_PREFIX} token exchange is not possible as id_token is expired`,
+        `${LOG_PREFIX} token exchange is not possible as id_token is expired`,
       );
     }
 
@@ -389,17 +383,12 @@ export class ConnectClient {
     } catch (error) {
       const { onError, throwsError } = opts || {};
 
-      console.error(
-        `${CONSOLE_LOG_PREFIX} error on getting an access token`,
-        error,
-      );
+      console.error(`${LOG_PREFIX} error on getting an access token`, error);
 
       if (typeof onError === 'function') {
         onError(transformErrorToOnErrorEventArgs(error));
       } else {
-        console.warn(
-          `${CONSOLE_LOG_PREFIX} 'onError' callback was not configured.`,
-        );
+        console.warn(`${LOG_PREFIX} 'onError' callback was not configured.`);
       }
 
       if (throwsError) {
@@ -440,16 +429,14 @@ export class ConnectClient {
       const { onError, throwsError } = opts || {};
 
       console.error(
-        `${CONSOLE_LOG_PREFIX} error on checking authentication state`,
+        `${LOG_PREFIX} error on checking authentication state`,
         error,
       );
 
       if (typeof onError === 'function') {
         onError(transformErrorToOnErrorEventArgs(error));
       } else {
-        console.warn(
-          `${CONSOLE_LOG_PREFIX} 'onError' callback was not configured.`,
-        );
+        console.warn(`${LOG_PREFIX} 'onError' callback was not configured.`);
       }
 
       if (throwsError) {
@@ -468,16 +455,14 @@ export class ConnectClient {
       const { onError, throwsError } = opts || {};
 
       console.error(
-        `${CONSOLE_LOG_PREFIX} error on initiation of a transaction`,
+        `${LOG_PREFIX} error on initiation of a transaction`,
         error,
       );
 
       if (typeof onError === 'function') {
         onError(transformErrorToOnErrorEventArgs(error));
       } else {
-        console.warn(
-          `${CONSOLE_LOG_PREFIX} 'onError' callback was not configured.`,
-        );
+        console.warn(`${LOG_PREFIX} 'onError' callback was not configured.`);
       }
 
       if (throwsError) {
