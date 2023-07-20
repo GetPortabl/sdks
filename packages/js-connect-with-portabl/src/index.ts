@@ -1,5 +1,4 @@
 import jwtDecode from 'jwt-decode';
-import { verify as verifyJWT } from 'jsonwebtoken';
 
 import { Transaction, TransactionManager } from './lib/transaction-manager';
 import { SessionStorage } from './lib/storage';
@@ -50,38 +49,6 @@ interface ICreateTransactionResponse {
   readonly state: string;
 }
 
-enum UserStatusEnum {
-  Registered = 'Registered', // Q: shall we consider changing it to "Active"?
-  Suspended = 'Suspended',
-  InReview = 'InReview',
-  Declined = 'Declined',
-}
-
-interface IGetUserResponse {
-  readonly user: {
-    readonly userStatus: UserStatusEnum;
-  };
-}
-
-interface IOnErrorEventArgs {
-  readonly errorMessage: string;
-}
-
-interface ILifeCycleEventOptions {
-  readonly onError?: (args: IOnErrorEventArgs) => void;
-}
-
-interface IOptions extends ILifeCycleEventOptions {
-  readonly throwsError?: boolean;
-}
-
-const transformErrorToOnErrorEventArgs = (error: any): IOnErrorEventArgs => {
-  if (error instanceof Error) {
-    return { errorMessage: error.message };
-  }
-  return { errorMessage: `SDK Exception: ${error}` };
-};
-
 export class ConnectClient {
   private readonly options: IConnectClientOptions;
 
@@ -98,7 +65,7 @@ export class ConnectClient {
     );
   }
 
-  private async _initiateTransaction(): Promise<void> {
+  async loginWithRedirect(): Promise<void> {
     const nonce: string = window.btoa(createRandomString());
 
     const url: URL = new URL(
@@ -117,6 +84,8 @@ export class ConnectClient {
       redirect: 'follow',
     });
 
+    this._followRedirect(createTransactionResult);
+
     const { authRequestUri, transactionId, state }: ICreateTransactionResponse =
       await createTransactionResult.json();
 
@@ -127,13 +96,21 @@ export class ConnectClient {
 
     if (
       typeof transactionId !== 'string' ||
-      !transactionId.length ||
+      !transactionId ||
       typeof state !== 'string' ||
       !state ||
       typeof clientId !== 'string' ||
-      !clientId.length
+      !clientId
     ) {
-      throw new Error(`${LOG_PREFIX} invalid transaction params`);
+      throw new Error(
+        `${LOG_PREFIX} invalid transaction params: ${Object.entries({
+          transactionId,
+          state,
+          clientId,
+        })
+          .map(([k, v]) => `${k}=${v}`)
+          .join(' ')}`,
+      );
     }
 
     this.transactionManager.create({
@@ -149,12 +126,13 @@ export class ConnectClient {
     window.location.href = `${this.options.walletDomain}/authorize${authRequestUriQueryParams}`;
   }
 
-  private async _getAuthResponse(args: {
+  private async _getAuthResponse({
+    responseCode,
+    transactionId,
+  }: {
     readonly responseCode: string;
     readonly transactionId: string;
   }): Promise<IGetAuthResponseDto> {
-    const { responseCode, transactionId } = args;
-
     const qs: string = `?response_code=${responseCode}&transaction_id=${transactionId}`;
     const url: URL = new URL(
       `${this.options.connectDomain}/api/v1/agent/${this.options.accountId}/oauth2/response${qs}`,
@@ -166,14 +144,16 @@ export class ConnectClient {
       redirect: 'follow',
     });
 
+    this._followRedirect(getAuthResponseResult);
+
     return getAuthResponseResult.json();
   }
 
-  private async _callTokenEndpoint(args: {
+  private async _callTokenEndpoint({
+    idTokenJwt,
+  }: {
     idTokenJwt: string;
   }): Promise<ITokenEndpointResponse> {
-    const { idTokenJwt } = args;
-
     const url: URL = new URL(
       `${this.options.connectDomain}/api/v1/agent/${this.options.accountId}/oauth2/token`,
     );
@@ -192,7 +172,19 @@ export class ConnectClient {
       redirect: 'follow',
     });
 
+    this._followRedirect(tokenEndpointResult);
+
     return tokenEndpointResult.json();
+  }
+
+  private _followRedirect(fetchResult: Response): void {
+    if (
+      fetchResult.ok &&
+      fetchResult.type === 'cors' &&
+      fetchResult.redirected
+    ) {
+      window.location.href = fetchResult.url;
+    }
   }
 
   private _isValidVpTokenChallengeOptions(
@@ -223,45 +215,22 @@ export class ConnectClient {
     return Date.now() >= idTokenPayload.exp * 1000;
   }
 
-  private async _isUserAccountActive(userDID: string): Promise<boolean> {
-    // Q: shall we create a separate endpoint which would return user status only i.e. that has no pii inside a response?
-    const url: URL = new URL(
-      `${this.options.connectDomain}/api/v1/agent/${this.options.accountId}/provider/users/${userDID}`,
-    );
-
-    const getUserResult: Response = await fetch(url.toString(), {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
-
-    const getUserResponse: IGetUserResponse = await getUserResult.json();
-
-    return getUserResponse.user.userStatus === UserStatusEnum.Registered;
-  }
-
   private async _isValidIdToken(
     idTokenJwt: string,
     tx: Transaction,
   ): Promise<boolean> {
-    // Q: shall we consider abstracting the logic of a given function by implementing a dedicated api endpoint?
+    const idTokenPayload: IIdTokenPayload =
+      jwtDecode<IIdTokenPayload>(idTokenJwt);
 
-    // Note: "jws", "iat", "exp" and "nonce" being validated through "verifyJWT"
-    const idTokenPayload: IIdTokenPayload = verifyJWT(idTokenJwt, '', {
-      nonce: tx.nonce,
-    }) as IIdTokenPayload;
-
+    const isValidNonce: boolean = idTokenPayload.nonce === tx.nonce;
     const isSelfSignedJwt: boolean = idTokenPayload.sub === idTokenPayload.iss;
 
-    const isUserAccountActive: boolean = await this._isUserAccountActive(
-      idTokenPayload.sub,
-    );
-
-    return isSelfSignedJwt && isUserAccountActive;
+    return isValidNonce && isSelfSignedJwt;
   }
 
-  private async _handleRedirectCallback(url: string): Promise<void> {
+  async handleRedirectCallback(
+    url: string = window.location.href,
+  ): Promise<void> {
     try {
       const responseCode: string | null = new URL(url).searchParams.get(
         'response_code',
@@ -319,35 +288,7 @@ export class ConnectClient {
     }
   }
 
-  // Note: a successful execution flags that a user is authenticated
-  // e.g. within React Connect SDK we set the following state: { isAuthenticated: true }
-  async handleRedirectCallback(
-    url: string = window.location.href,
-    opts?: IOptions,
-  ): Promise<void> {
-    try {
-      return this._handleRedirectCallback(url);
-    } catch (error) {
-      const { onError, throwsError } = opts || {};
-
-      console.error(
-        `${LOG_PREFIX} error on handling of a redirect callback`,
-        error,
-      );
-
-      if (typeof onError === 'function') {
-        onError(transformErrorToOnErrorEventArgs(error));
-      } else {
-        console.warn(`${LOG_PREFIX} 'onError' callback was not configured.`);
-      }
-
-      if (throwsError) {
-        throw error;
-      }
-    }
-  }
-
-  async _getAccessToken(): Promise<ITokenEndpointResponse> {
+  async getAccessToken(): Promise<ITokenEndpointResponse> {
     const idTokenJwt: string | null = localStorage.getItem(
       ID_TOKEN_LOCAL_STORAGE_KEY,
     );
@@ -375,31 +316,7 @@ export class ConnectClient {
     return tokenResponse;
   }
 
-  async getAccessToken(
-    opts?: IOptions,
-  ): Promise<ITokenEndpointResponse | null> {
-    try {
-      return this._getAccessToken();
-    } catch (error) {
-      const { onError, throwsError } = opts || {};
-
-      console.error(`${LOG_PREFIX} error on getting an access token`, error);
-
-      if (typeof onError === 'function') {
-        onError(transformErrorToOnErrorEventArgs(error));
-      } else {
-        console.warn(`${LOG_PREFIX} 'onError' callback was not configured.`);
-      }
-
-      if (throwsError) {
-        throw error;
-      }
-    }
-
-    return null;
-  }
-
-  _getIsAuthenticated(): boolean {
+  getIsAuthenticated(): boolean {
     if (typeof window === 'undefined') {
       return false;
     }
@@ -420,55 +337,6 @@ export class ConnectClient {
     }
 
     return true;
-  }
-
-  getIsAuthenticated(opts: IOptions): boolean {
-    try {
-      return this._getIsAuthenticated();
-    } catch (error) {
-      const { onError, throwsError } = opts || {};
-
-      console.error(
-        `${LOG_PREFIX} error on checking authentication state`,
-        error,
-      );
-
-      if (typeof onError === 'function') {
-        onError(transformErrorToOnErrorEventArgs(error));
-      } else {
-        console.warn(`${LOG_PREFIX} 'onError' callback was not configured.`);
-      }
-
-      if (throwsError) {
-        throw error;
-      }
-    }
-
-    return false;
-  }
-
-  async loginWithRedirect(opts?: IOptions): Promise<void> {
-    try {
-      // should fire redirect on response
-      await this._initiateTransaction();
-    } catch (error) {
-      const { onError, throwsError } = opts || {};
-
-      console.error(
-        `${LOG_PREFIX} error on initiation of a transaction`,
-        error,
-      );
-
-      if (typeof onError === 'function') {
-        onError(transformErrorToOnErrorEventArgs(error));
-      } else {
-        console.warn(`${LOG_PREFIX} 'onError' callback was not configured.`);
-      }
-
-      if (throwsError) {
-        throw error;
-      }
-    }
   }
 
   logout(): void {

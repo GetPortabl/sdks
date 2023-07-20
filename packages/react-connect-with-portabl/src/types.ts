@@ -1,8 +1,8 @@
-import { GetAccessTokenResponse } from '@portabl/js-connect-with-portabl';
+import { ITokenEndpointResponse } from '@portabl/js-connect-with-portabl';
 
 export interface IConnectContext extends IConnectAuthState {
   loginWithRedirect: () => Promise<void>;
-  getAccessTokenSilently: () => Promise<GetAccessTokenResponse>;
+  getAccessTokenSilently: () => Promise<ITokenEndpointResponse>;
   logout: () => void;
 }
 
