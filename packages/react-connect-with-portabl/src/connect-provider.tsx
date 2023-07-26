@@ -10,16 +10,15 @@ import {
   IConnectClientOptions,
 } from '@portabl/js-connect-with-portabl';
 import { IConnectAuthState } from './types';
-import { DEFAULT_AUTH_STATE } from './constants';
+import { DEFAULT_AUTH_STATE, RESPONSE_CODE_REGEX } from './constants';
 import { ConnectContext } from './connect-context';
 
-const RESPONSE_CODE_REGEX = /[?&]response_code=[^&]+/;
 export const hasResponseCode = (
   searchParams = window.location.search,
 ): boolean => RESPONSE_CODE_REGEX.test(searchParams);
 
 type ConnectProviderProps = IConnectClientOptions & {
-  children: React.ReactNode;
+  readonly children: React.ReactNode;
 };
 
 export const ConnectProvider = ({
@@ -27,6 +26,7 @@ export const ConnectProvider = ({
   ...clientOptions
 }: ConnectProviderProps) => {
   const [client] = useState(() => new ConnectClient(clientOptions));
+
   const getIsAuthenticated = useCallback(
     () => client.getIsAuthenticated(),
     [client],
@@ -49,6 +49,7 @@ export const ConnectProvider = ({
 
   const logout = useCallback(async () => {
     client.logout();
+
     setAuthState(prevAuthState => ({
       ...prevAuthState,
       isAuthenticated: false,
@@ -73,6 +74,7 @@ export const ConnectProvider = ({
     if (hasResponseCode()) {
       (async () => {
         await handleRedirectCallback();
+
         setAuthState(prevAuthState => ({
           ...prevAuthState,
           isAuthenticated: true,
