@@ -1,5 +1,12 @@
 # @portabl/js-connect-with-portabl
 
+## 0.0.8
+
+### Patch Changes
+
+- 999f603: Add error handling
+- 7e07bbc: Remove vp token handling
+
 ## 0.0.7
 
 ### Patch Changes
