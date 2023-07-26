@@ -1,5 +1,14 @@
 # @portabl/react-connect-with-portabl
 
+## 0.0.8
+
+### Patch Changes
+
+- 999f603: Add error handling
+- Updated dependencies [999f603]
+- Updated dependencies [7e07bbc]
+  - @portabl/js-connect-with-portabl@0.0.8
+
 ## 0.0.7
 
 ### Patch Changes
