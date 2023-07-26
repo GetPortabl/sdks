@@ -252,7 +252,7 @@ export class ConnectClient {
       }
 
       const {
-        vp_token: vpTokenJwt,
+        // vp_token: vpTokenJwt,
         id_token: idTokenJwt,
       }: IGetAuthResponseDto = await this._getAuthResponse({
         responseCode,
@@ -268,11 +268,11 @@ export class ConnectClient {
         throw new Error(`${LOG_PREFIX} id_token is invalid`);
       }
 
-      const isValidVpToken: boolean = this._isValidateVpToken(vpTokenJwt, tx);
+      // const isValidVpToken: boolean = this._isValidateVpToken(vpTokenJwt, tx);
 
-      if (!isValidVpToken) {
-        throw new Error(`${LOG_PREFIX} vp_token is invalid`);
-      }
+      // if (!isValidVpToken) {
+      //   throw new Error(`${LOG_PREFIX} vp_token is invalid`);
+      // }
 
       localStorage.setItem(ID_TOKEN_LOCAL_STORAGE_KEY, idTokenJwt);
 
