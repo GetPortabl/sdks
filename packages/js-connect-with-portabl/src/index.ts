@@ -15,19 +15,6 @@ export interface ITokenEndpointResponse {
   readonly access_token: string;
 }
 
-interface IChallengeOptions {
-  readonly challenge: string;
-  readonly domain: string;
-}
-
-interface ILdProof extends IChallengeOptions {}
-
-type LdProofType = ILdProof | Array<ILdProof>;
-
-interface IVpToken {
-  readonly proof: LdProofType;
-}
-
 interface IIdTokenPayload {
   readonly iat: number;
   readonly exp: number;
@@ -39,7 +26,6 @@ interface IIdTokenPayload {
 
 interface IGetAuthResponseDto {
   readonly id_token: string;
-  readonly vp_token: IVpToken;
 }
 
 interface ICreateTransactionResponse {
@@ -80,7 +66,6 @@ export class ConnectClient {
       body: JSON.stringify({
         nonce,
       }),
-      // Note: handles error cases via redirect (302) in compliance with https://www.rfc-editor.org/rfc/rfc6749.html#section-4.2.2.1
       redirect: 'follow',
     });
 
@@ -122,7 +107,6 @@ export class ConnectClient {
 
     const authRequestUriQueryParams: string = authRequestURL.search;
 
-    // Note: handles both success and error cases via redirect (302) in compliance with https://www.rfc-editor.org/rfc/rfc6749.html#section-4.2.2.1
     window.location.href = `${this.options.walletDomain}/authorize${authRequestUriQueryParams}`;
   }
 
@@ -140,7 +124,6 @@ export class ConnectClient {
 
     const getAuthResponseResult: Response = await fetch(url.toString(), {
       method: 'GET',
-      // Note: handles error cases via redirect (302) in compliance with https://www.rfc-editor.org/rfc/rfc6749.html#section-4.2.2.1
       redirect: 'follow',
     });
 
@@ -168,7 +151,6 @@ export class ConnectClient {
         grant_type: 'id_token',
         scope: 'openid',
       }),
-      // Note: handles error cases via redirect (302) in compliance with https://www.rfc-editor.org/rfc/rfc6749.html#section-4.2.2.1
       redirect: 'follow',
     });
 
@@ -185,27 +167,6 @@ export class ConnectClient {
     ) {
       window.location.href = fetchResult.url;
     }
-  }
-
-  private _isValidVpTokenChallengeOptions(
-    challengeOptions: IChallengeOptions,
-    tx: Transaction,
-  ): boolean {
-    return (
-      challengeOptions.challenge === tx.nonce &&
-      challengeOptions.domain === tx.clientId
-    );
-  }
-
-  private _isValidateVpToken(vpTokenJwt: IVpToken, tx: Transaction): boolean {
-    const { proof: vpProof }: IVpToken = vpTokenJwt;
-
-    return Array.isArray(vpProof)
-      ? !vpProof.some(
-          (vpProofItem: ILdProof) =>
-            !this._isValidVpTokenChallengeOptions(vpProofItem, tx),
-        )
-      : this._isValidVpTokenChallengeOptions(vpProof, tx);
   }
 
   private _isExpiredIdToken(idTokenJwt: string): boolean {
@@ -251,13 +212,11 @@ export class ConnectClient {
         );
       }
 
-      const {
-        vp_token: vpTokenJwt,
-        id_token: idTokenJwt,
-      }: IGetAuthResponseDto = await this._getAuthResponse({
-        responseCode,
-        transactionId: tx.transactionId,
-      });
+      const { id_token: idTokenJwt }: IGetAuthResponseDto =
+        await this._getAuthResponse({
+          responseCode,
+          transactionId: tx.transactionId,
+        });
 
       const isValidIdToken: boolean = await this._isValidIdToken(
         idTokenJwt,
@@ -266,12 +225,6 @@ export class ConnectClient {
 
       if (!isValidIdToken) {
         throw new Error(`${LOG_PREFIX} id_token is invalid`);
-      }
-
-      const isValidVpToken: boolean = this._isValidateVpToken(vpTokenJwt, tx);
-
-      if (!isValidVpToken) {
-        throw new Error(`${LOG_PREFIX} vp_token is invalid`);
       }
 
       localStorage.setItem(ID_TOKEN_LOCAL_STORAGE_KEY, idTokenJwt);
