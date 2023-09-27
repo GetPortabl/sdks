@@ -6,6 +6,7 @@ const SyncWithPortabl = ({
   providerName,
   getSyncContext,
   prepareSync,
+  accountId,
 }: Options) => {
   const portablSyncRootRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -13,9 +14,9 @@ const SyncWithPortabl = ({
       createSyncWithPortabl({
         root: portablSyncRootRef.current,
         widgetBaseUrl,
-        providerName,
         getSyncContext,
         prepareSync,
+        accountId,
       });
     }
   }, [widgetBaseUrl, providerName, getSyncContext, prepareSync]);
