@@ -1,5 +1,6 @@
 import {
-  IframeWidgetClientMesssageType,
+  IframeModalClientMessageType,
+  IframeWidgetClientMessageType,
   IncomingMessageDataType,
   Options,
 } from './lib/types';
@@ -44,18 +45,28 @@ export async function createSyncWithPortabl(options: Options): Promise<void> {
     prepareSync,
     root = DEFAULT_ROOT_SELECTOR,
     providerName,
+    accountId,
   } = options;
   // Pass in previously defined rootNode and messageHandler if they exist and perform cleanup.
   handleReset(rootNode, messageHandler);
   rootNode = typeof root === 'string' ? document.querySelector(root) : root;
 
-  const iframeWidget = createIframeWidget(`${widgetBaseUrl}/sync-widget`);
-  const iframeModal = createIframeModal(`${widgetBaseUrl}/sync-modal`);
+  const iframeWidget = createIframeWidget(
+    `${widgetBaseUrl}/sync/${accountId}/widget`,
+  );
+  const iframeModal = createIframeModal(
+    `${widgetBaseUrl}/sync/${accountId}/modal`,
+  );
   const modal = createModal();
   const container = createContainer(iframeWidget);
 
   const iframeWidgetClient =
-    createPostMessageClient<IframeWidgetClientMesssageType>(iframeWidget, {
+    createPostMessageClient<IframeWidgetClientMessageType>(iframeWidget, {
+      targetOrigin: widgetBaseUrl,
+    });
+
+  const iframeModalClient =
+    createPostMessageClient<IframeModalClientMessageType>(iframeModal, {
       targetOrigin: widgetBaseUrl,
     });
 
@@ -67,6 +78,15 @@ export async function createSyncWithPortabl(options: Options): Promise<void> {
 
       iframeWidgetClient.sendMessage({
         action: OutgoingPostMessageEvent.SYNC_WIDGET_CONTEXT_LOADED,
+        payload: {
+          isSyncOn,
+          isSessionEstablished,
+          datapoints,
+          issuerDIDs,
+        },
+      });
+      iframeModalClient.sendMessage({
+        action: OutgoingPostMessageEvent.SYNC_MODAL_CONTEXT_LOADED,
         payload: {
           isSyncOn,
           isSessionEstablished,
@@ -99,7 +119,7 @@ export async function createSyncWithPortabl(options: Options): Promise<void> {
           );
 
           if (isLinked === false && invitationUrl) {
-            iframeWidgetClient.sendMessage({
+            iframeModalClient.sendMessage({
               action: OutgoingPostMessageEvent.SYNC_INVITATION_CREATED,
               payload: {
                 invitationUrl,
@@ -109,7 +129,7 @@ export async function createSyncWithPortabl(options: Options): Promise<void> {
             modal.style.display = 'none';
           }
         } catch (err) {
-          iframeWidgetClient.sendMessage({
+          iframeModalClient.sendMessage({
             action: OutgoingPostMessageEvent.SYNC_INVITATION_ERROR,
           });
         }
@@ -118,6 +138,11 @@ export async function createSyncWithPortabl(options: Options): Promise<void> {
       case IncomingPostMessageEvent.SYNC_WIDGET_READY: {
         iframeWidgetClient.setIframeToLoaded();
         container.style.display = 'flex';
+
+        break;
+      }
+      case IncomingPostMessageEvent.SYNC_MODAL_READY: {
+        iframeModalClient.setIframeToLoaded();
 
         break;
       }
