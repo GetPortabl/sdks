@@ -1,5 +1,11 @@
 # @portabl/js-sync-with-portabl
 
+## 0.1.0
+
+### Minor Changes
+
+- 48d644d: Modify sync sdks to work with embedded authentication
+
 ## 0.0.8
 
 ### Patch Changes
