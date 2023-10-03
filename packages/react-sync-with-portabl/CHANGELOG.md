@@ -1,5 +1,16 @@
 # @portabl/react-sync-with-portabl
 
+## 0.1.0
+
+### Minor Changes
+
+- 48d644d: Modify sync sdks to work with embedded authentication
+
+### Patch Changes
+
+- Updated dependencies [48d644d]
+  - @portabl/js-sync-with-portabl@0.1.0
+
 ## 0.0.4
 
 ### Patch Changes
