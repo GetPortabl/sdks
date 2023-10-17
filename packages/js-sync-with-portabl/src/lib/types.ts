@@ -8,11 +8,10 @@ export interface Options {
   root?: string | HTMLDivElement;
   widgetBaseUrl?: string;
   accountId: string;
+  dataProfileVersion?: string;
   getSyncContext: () => Promise<{
     isSyncOn: boolean;
     isSessionEstablished: boolean;
-    datapoints: string[];
-    issuerDIDs: string[];
   }>;
   prepareSync: () => Promise<{
     isLinked: boolean;
@@ -26,8 +25,6 @@ export type IframeModalClientMessageType =
       payload: {
         isSyncOn: boolean;
         isSessionEstablished: boolean;
-        datapoints: string[];
-        issuerDIDs: string[];
       };
     }
   | {
@@ -50,8 +47,6 @@ export type IframeWidgetClientMessageType =
       payload: {
         isSyncOn: boolean;
         isSessionEstablished: boolean;
-        datapoints: string[];
-        issuerDIDs: string[];
       };
     }
   | {
