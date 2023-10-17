@@ -1,6 +1,4 @@
-export const DEFAULT_ROOT_SELECTOR: string = 'portabl-sync-root';
-
-export const DEFAULT_DATA_PROFILE_VERSION: string = 'latest';
+export const DEFAULT_ROOT_SELECTOR = 'portabl-sync-root';
 
 export enum OutgoingPostMessageEvent {
   SYNC_WIDGET_CONTEXT_LOADED = 'SYNC_WIDGET_CONTEXT_LOADED',

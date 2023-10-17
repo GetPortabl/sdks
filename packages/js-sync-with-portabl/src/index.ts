@@ -9,7 +9,6 @@ import {
   OutgoingPostMessageEvent,
   IncomingPostMessageEvent,
   DEFAULT_ROOT_SELECTOR,
-  DEFAULT_DATA_PROFILE_VERSION,
 } from './lib/constants';
 import {
   createContainer,
@@ -47,23 +46,16 @@ export async function createSyncWithPortabl(options: Options): Promise<void> {
     root = DEFAULT_ROOT_SELECTOR,
     providerName,
     accountId,
-    dataProfileVersion = DEFAULT_DATA_PROFILE_VERSION,
   } = options;
   // Pass in previously defined rootNode and messageHandler if they exist and perform cleanup.
   handleReset(rootNode, messageHandler);
   rootNode = typeof root === 'string' ? document.querySelector(root) : root;
 
   const iframeWidget = createIframeWidget(
-    `${widgetBaseUrl}/data-sync/widget?${new URLSearchParams({
-      accountId,
-      dataProfileVersion,
-    })}`,
+    `${widgetBaseUrl}/sync/${accountId}/widget`,
   );
   const iframeModal = createIframeModal(
-    `${widgetBaseUrl}/data-sync/modal?${new URLSearchParams({
-      accountId,
-      dataProfileVersion,
-    })}`,
+    `${widgetBaseUrl}/sync/${accountId}/modal`,
   );
   const modal = createModal();
   const container = createContainer(iframeWidget);
@@ -81,13 +73,16 @@ export async function createSyncWithPortabl(options: Options): Promise<void> {
   const handleGetSyncContext = async () => {
     try {
       const syncContext = await withRetries(getSyncContext, MAX_RETRIES);
-      const { isSessionEstablished, isSyncOn } = syncContext || {};
+      const { isSessionEstablished, isSyncOn, datapoints, issuerDIDs } =
+        syncContext || {};
 
       iframeWidgetClient.sendMessage({
         action: OutgoingPostMessageEvent.SYNC_WIDGET_CONTEXT_LOADED,
         payload: {
           isSyncOn,
           isSessionEstablished,
+          datapoints,
+          issuerDIDs,
         },
       });
       iframeModalClient.sendMessage({
@@ -95,6 +90,8 @@ export async function createSyncWithPortabl(options: Options): Promise<void> {
         payload: {
           isSyncOn,
           isSessionEstablished,
+          datapoints,
+          issuerDIDs,
         },
       });
     } catch (error) {
