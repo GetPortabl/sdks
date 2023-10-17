@@ -17,7 +17,6 @@ module.exports = {
     'no-console': ['error', { allow: ['warn', 'error', 'debug'] }],
     'no-underscore-dangle': 'off',
   },
-  tsconfigRootDir: __dirname,
   plugins: ['import'],
   overrides: [
     {
