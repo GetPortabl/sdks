@@ -1,5 +1,11 @@
 # @portabl/js-sync-with-portabl
 
+## 0.1.1
+
+### Patch Changes
+
+- 698410f: Utilize accountId and dataprofileVersion to determine sync dataprofile based on configuration
+
 ## 0.1.0
 
 ### Minor Changes
