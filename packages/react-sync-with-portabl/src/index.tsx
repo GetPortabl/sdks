@@ -2,24 +2,33 @@ import React, { useEffect, useRef } from 'react';
 import { createSyncWithPortabl, Options } from '@portabl/js-sync-with-portabl';
 
 const SyncWithPortabl = ({
-  widgetBaseUrl,
-  providerName,
+  accountId,
+  dataProfileVersion,
   getSyncContext,
   prepareSync,
-  accountId,
+  providerName,
+  widgetBaseUrl,
 }: Options) => {
   const portablSyncRootRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (portablSyncRootRef.current) {
       createSyncWithPortabl({
         root: portablSyncRootRef.current,
-        widgetBaseUrl,
+        accountId,
+        dataProfileVersion,
         getSyncContext,
         prepareSync,
-        accountId,
+        widgetBaseUrl,
       });
     }
-  }, [widgetBaseUrl, providerName, getSyncContext, prepareSync]);
+  }, [
+    accountId,
+    dataProfileVersion,
+    getSyncContext,
+    prepareSync,
+    providerName,
+    widgetBaseUrl,
+  ]);
 
   return <div ref={portablSyncRootRef} />;
 };
