@@ -42,6 +42,7 @@ export function createIframeWidget(url: string): HTMLIFrameElement {
   iframe.style.width = '350px';
   iframe.style.border = '0';
   iframe.style.overflow = 'auto';
+  iframe.allow = 'clipboard-write';
 
   // mobile breakpoint
   const mobileSize = '(max-width: 490px)';
@@ -64,6 +65,7 @@ export function createIframeModal(url: string): HTMLIFrameElement {
   iframe.style.borderRadius = '18px';
   iframe.style.boxShadow = '0px 3px 14px rgba(0, 0, 0, 0.11)';
   iframe.style.background = 'white';
+  iframe.allow = 'clipboard-write';
 
   // mobile breakpoint
   const mobileSize = '(max-width: 490px)';
