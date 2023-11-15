@@ -1,5 +1,11 @@
 # @portabl/react-sync-with-portabl
 
+## 0.1.2
+
+### Patch Changes
+
+- 83b9c0f: update-react-sync-with-portabl
+
 ## 0.1.1
 
 ### Patch Changes
