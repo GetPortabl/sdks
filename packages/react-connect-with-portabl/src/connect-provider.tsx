@@ -27,14 +27,14 @@ export const ConnectProvider = ({
 }: ConnectProviderProps) => {
   const [client] = useState(() => new ConnectClient(clientOptions));
 
-  const getIsAuthenticated = useCallback(
-    () => client.getIsAuthenticated(),
-    [client],
-  );
+  const getIsAuthorized = useCallback(() => client.getIsAuthorized(), [client]);
+  const isResponseCodePresent =
+    typeof window !== 'undefined' && hasResponseCode();
 
   const [authState, setAuthState] = useState<IConnectAuthState>({
     ...DEFAULT_AUTH_STATE,
-    isAuthenticated: getIsAuthenticated(),
+    isHandlingResponse: isResponseCodePresent,
+    isAuthorized: getIsAuthorized(),
   });
 
   const handleRedirectCallback = useCallback(
@@ -42,25 +42,28 @@ export const ConnectProvider = ({
     [client],
   );
 
-  const getAccessTokenSilently = useCallback(
-    async () => client.getAccessToken(),
-    [client],
-  );
-
-  const logout = useCallback(async () => {
-    client.logout();
+  const resetAuthorization = useCallback(async () => {
+    client.resetAuthorization();
 
     setAuthState(prevAuthState => ({
       ...prevAuthState,
-      isAuthenticated: false,
+      isAuthorized: false,
       isLoading: false,
+      error: Error,
+      user: undefined,
+      idTokenJwt: undefined,
+      vpToken: undefined,
     }));
   }, [client]);
 
-  const loginWithRedirect = useCallback(
-    async () => client.loginWithRedirect(),
-    [client],
-  );
+  const authorizeWithRedirect = useCallback(async () => {
+    setAuthState(prevAuthState => ({
+      ...prevAuthState,
+      isLoading: true,
+      isInitiating: true,
+    }));
+    await client.authorizeWithRedirect();
+  }, [client]);
 
   const hasHandledRedirectCallbackRef = useRef(false);
 
@@ -71,14 +74,31 @@ export const ConnectProvider = ({
 
     hasHandledRedirectCallbackRef.current = true;
 
-    if (hasResponseCode()) {
+    if (isResponseCodePresent) {
       (async () => {
-        await handleRedirectCallback();
+        setAuthState(prevAuthState => ({
+          ...prevAuthState,
+          isHandlingResponse: true,
+          isLoading: true,
+        }));
+
+        try {
+          await handleRedirectCallback();
+        } catch (e) {
+          setAuthState(prevAuthState => ({
+            ...prevAuthState,
+            error: e,
+          }));
+        }
 
         setAuthState(prevAuthState => ({
           ...prevAuthState,
-          isAuthenticated: true,
+          isAuthorized: true,
           isLoading: false,
+          isHandlingResponse: false,
+          vpToken: client.vpTokenJsonLd,
+          idTokenJwt: client.idTokenJwt,
+          user: client.idTokenClaims,
         }));
       })();
     } else {
@@ -92,11 +112,10 @@ export const ConnectProvider = ({
   const contextValue = useMemo(
     () => ({
       ...authState,
-      loginWithRedirect,
-      getAccessTokenSilently,
-      logout,
+      authorizeWithRedirect,
+      resetAuthorization,
     }),
-    [authState, loginWithRedirect, getAccessTokenSilently, logout],
+    [authState, authorizeWithRedirect, resetAuthorization],
   );
 
   return (

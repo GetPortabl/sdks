@@ -3,8 +3,10 @@ import { IConnectAuthState } from './types';
 export const RESPONSE_CODE_REGEX = /[?&]response_code=[^&]+/;
 
 export const DEFAULT_AUTH_STATE: IConnectAuthState = {
-  isLoading: true,
-  isAuthenticated: false,
+  isLoading: false,
+  isAuthorized: false,
+  isInitiating: false,
+  isHandlingResponse: false,
 };
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
