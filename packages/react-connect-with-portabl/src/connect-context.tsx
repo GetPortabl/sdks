@@ -4,7 +4,6 @@ import { IConnectContext } from './types';
 
 export const ConnectContext = createContext<IConnectContext>({
   ...DEFAULT_AUTH_STATE,
-  loginWithRedirect: stub,
-  getAccessTokenSilently: stub,
-  logout: stub,
+  authorizeWithRedirect: stub,
+  resetAuthorization: stub,
 });

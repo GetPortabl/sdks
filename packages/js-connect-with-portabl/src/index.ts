@@ -1,21 +1,26 @@
 import jwtDecode from 'jwt-decode';
+import {
+  IProof,
+  IVerifiablePresentation as ISphereonVerifiablePresentation,
+} from '@sphereon/ssi-types';
 
 import { Transaction, TransactionManager } from './lib/transaction-manager';
 import { SessionStorage } from './lib/storage';
 import { createRandomString } from './lib/random-string';
-import { LOG_PREFIX, ID_TOKEN_LOCAL_STORAGE_KEY } from './lib/constants';
+import { LOG_PREFIX } from './lib/constants';
 
 export interface IConnectClientOptions {
   readonly accountId: string;
   readonly connectDomain: string;
   readonly walletDomain: string;
+  readonly projectId: string;
 }
 
 export interface ITokenEndpointResponse {
   readonly access_token: string;
 }
 
-interface IIdTokenPayload {
+export interface IIdTokenClaims {
   readonly iat: number;
   readonly exp: number;
   readonly iss: string;
@@ -23,9 +28,12 @@ interface IIdTokenPayload {
   readonly aud: string;
   readonly nonce: string;
 }
+export interface IVerifiablePresentation
+  extends ISphereonVerifiablePresentation {}
 
 interface IGetAuthResponseDto {
   readonly id_token: string;
+  readonly vp_token: IVerifiablePresentation;
 }
 
 interface ICreateTransactionResponse {
@@ -40,6 +48,12 @@ export class ConnectClient {
 
   private readonly transactionManager: TransactionManager;
 
+  idTokenJwt?: string;
+
+  idTokenClaims?: IIdTokenClaims;
+
+  vpTokenJsonLd?: IVerifiablePresentation;
+
   constructor(options: IConnectClientOptions) {
     this.options = options;
 
@@ -47,11 +61,77 @@ export class ConnectClient {
 
     this.transactionManager = new TransactionManager(
       transactionStorage,
-      this.options.accountId,
+      `${this.options.accountId}:${this.options.projectId}`,
     );
   }
 
-  async loginWithRedirect(): Promise<void> {
+  private async _getAuthorizationResponse({
+    responseCode,
+    transactionId,
+  }: {
+    readonly responseCode: string;
+    readonly transactionId: string;
+  }): Promise<IGetAuthResponseDto> {
+    const qs: string = `?response_code=${responseCode}&transaction_id=${transactionId}`;
+    const url: URL = new URL(
+      `${this.options.connectDomain}/api/v1/agent/${this.options.accountId}/oauth2/response${qs}`,
+    );
+
+    const getAuthResponseResult: Response = await fetch(url.toString(), {
+      method: 'GET',
+      redirect: 'follow',
+    });
+
+    this._followRedirect(getAuthResponseResult);
+
+    return getAuthResponseResult.json();
+  }
+
+  private _followRedirect(fetchResult: Response): void {
+    if (
+      fetchResult.ok &&
+      fetchResult.type === 'cors' &&
+      fetchResult.redirected
+    ) {
+      window.location.href = fetchResult.url;
+    }
+  }
+
+  private _isExpiredIdToken(idTokenJwt: string): boolean {
+    const idTokenPayload: IIdTokenClaims =
+      jwtDecode<IIdTokenClaims>(idTokenJwt);
+
+    return Date.now() >= idTokenPayload.exp * 1000;
+  }
+
+  private async _isValidIdToken(
+    idTokenJwt: string,
+    tx: Transaction,
+  ): Promise<boolean> {
+    const idTokenPayload: IIdTokenClaims =
+      jwtDecode<IIdTokenClaims>(idTokenJwt);
+
+    const isValidNonce: boolean = idTokenPayload.nonce === tx.nonce;
+    const isSelfSignedJwt: boolean = idTokenPayload.sub === idTokenPayload.iss;
+
+    return isValidNonce && isSelfSignedJwt;
+  }
+
+  private validateVpTokenProof(proof: IProof, nonce: string): boolean {
+    return proof?.challenge === nonce;
+  }
+
+  private _isValidVpToken(
+    vpToken: IVerifiablePresentation,
+    tx: Transaction,
+  ): boolean {
+    const { nonce } = tx;
+    return Array.isArray(vpToken.proof)
+      ? vpToken.proof.every(proof => this.validateVpTokenProof(proof, nonce))
+      : this.validateVpTokenProof(vpToken.proof, nonce);
+  }
+
+  async authorizeWithRedirect(): Promise<void> {
     const nonce: string = window.btoa(createRandomString());
 
     const url: URL = new URL(
@@ -65,9 +145,13 @@ export class ConnectClient {
       },
       body: JSON.stringify({
         nonce,
+        projectId: this.options.projectId,
       }),
       redirect: 'follow',
     });
+    if (!createTransactionResult.ok) {
+      throw new Error('Unable to initiate transaction');
+    }
 
     this._followRedirect(createTransactionResult);
 
@@ -110,113 +194,34 @@ export class ConnectClient {
     window.location.href = `${this.options.walletDomain}/authorize${authRequestUriQueryParams}`;
   }
 
-  private async _getAuthResponse({
-    responseCode,
-    transactionId,
-  }: {
-    readonly responseCode: string;
-    readonly transactionId: string;
-  }): Promise<IGetAuthResponseDto> {
-    const qs: string = `?response_code=${responseCode}&transaction_id=${transactionId}`;
-    const url: URL = new URL(
-      `${this.options.connectDomain}/api/v1/agent/${this.options.accountId}/oauth2/response${qs}`,
-    );
-
-    const getAuthResponseResult: Response = await fetch(url.toString(), {
-      method: 'GET',
-      redirect: 'follow',
-    });
-
-    this._followRedirect(getAuthResponseResult);
-
-    return getAuthResponseResult.json();
-  }
-
-  private async _callTokenEndpoint({
-    idTokenJwt,
-  }: {
-    idTokenJwt: string;
-  }): Promise<ITokenEndpointResponse> {
-    const url: URL = new URL(
-      `${this.options.connectDomain}/api/v1/agent/${this.options.accountId}/oauth2/token`,
-    );
-
-    const tokenEndpointResult: Response = await fetch(url.toString(), {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        id_token: idTokenJwt,
-        grant_type: 'id_token',
-        scope: 'openid',
-      }),
-      redirect: 'follow',
-    });
-
-    this._followRedirect(tokenEndpointResult);
-
-    return tokenEndpointResult.json();
-  }
-
-  private _followRedirect(fetchResult: Response): void {
-    if (
-      fetchResult.ok &&
-      fetchResult.type === 'cors' &&
-      fetchResult.redirected
-    ) {
-      window.location.href = fetchResult.url;
-    }
-  }
-
-  private _isExpiredIdToken(idTokenJwt: string): boolean {
-    const idTokenPayload: IIdTokenPayload =
-      jwtDecode<IIdTokenPayload>(idTokenJwt);
-
-    return Date.now() >= idTokenPayload.exp * 1000;
-  }
-
-  private async _isValidIdToken(
-    idTokenJwt: string,
-    tx: Transaction,
-  ): Promise<boolean> {
-    const idTokenPayload: IIdTokenPayload =
-      jwtDecode<IIdTokenPayload>(idTokenJwt);
-
-    const isValidNonce: boolean = idTokenPayload.nonce === tx.nonce;
-    const isSelfSignedJwt: boolean = idTokenPayload.sub === idTokenPayload.iss;
-
-    return isValidNonce && isSelfSignedJwt;
-  }
-
   async handleRedirectCallback(
     url: string = window.location.href,
   ): Promise<void> {
     try {
+      const tx: Transaction | undefined = this.transactionManager.get();
+
+      if (!tx) {
+        // Ignore handling redirect callback because it was not initiated by this client
+        return;
+      }
+
       const responseCode: string | null = new URL(url).searchParams.get(
         'response_code',
       );
 
       if (!responseCode) {
-        console.warn(
-          `${LOG_PREFIX} fetching auth response is not possible as response code is not found`,
-        );
-        return;
-      }
-
-      const tx: Transaction | undefined = this.transactionManager.get();
-
-      if (!tx) {
         throw new Error(
-          `${LOG_PREFIX} fetching auth response is not possible as transaction is not found`,
+          `${LOG_PREFIX} No response_code found for this transaction`,
         );
       }
 
-      const { id_token: idTokenJwt }: IGetAuthResponseDto =
-        await this._getAuthResponse({
-          responseCode,
-          transactionId: tx.transactionId,
-        });
+      const {
+        id_token: idTokenJwt,
+        vp_token: vpTokenJsonLd,
+      }: IGetAuthResponseDto = await this._getAuthorizationResponse({
+        responseCode,
+        transactionId: tx.transactionId,
+      });
 
       const isValidIdToken: boolean = await this._isValidIdToken(
         idTokenJwt,
@@ -227,7 +232,15 @@ export class ConnectClient {
         throw new Error(`${LOG_PREFIX} id_token is invalid`);
       }
 
-      localStorage.setItem(ID_TOKEN_LOCAL_STORAGE_KEY, idTokenJwt);
+      const isValidVpToken: boolean = this._isValidVpToken(vpTokenJsonLd, tx);
+
+      if (!isValidVpToken) {
+        throw new Error(`${LOG_PREFIX} vp_token is invalid`);
+      }
+
+      this.idTokenJwt = idTokenJwt;
+      this.idTokenClaims = jwtDecode<IIdTokenClaims>(idTokenJwt);
+      this.vpTokenJsonLd = vpTokenJsonLd;
 
       // Remove transaction from cache
       this.transactionManager.remove();
@@ -241,58 +254,27 @@ export class ConnectClient {
     }
   }
 
-  async getAccessToken(): Promise<ITokenEndpointResponse> {
-    const idTokenJwt: string | null = localStorage.getItem(
-      ID_TOKEN_LOCAL_STORAGE_KEY,
-    );
-
-    if (!idTokenJwt) {
-      throw new Error(
-        `${LOG_PREFIX} token exchange is not possible as id_token is not found`,
-      );
-    }
-
-    const isExpiredIdToken: boolean = this._isExpiredIdToken(idTokenJwt);
-
-    if (isExpiredIdToken) {
-      throw new Error(
-        `${LOG_PREFIX} token exchange is not possible as id_token is expired`,
-      );
-    }
-
-    const tokenResponse: ITokenEndpointResponse = await this._callTokenEndpoint(
-      {
-        idTokenJwt,
-      },
-    );
-
-    return tokenResponse;
-  }
-
-  getIsAuthenticated(): boolean {
+  getIsAuthorized(): boolean {
     if (typeof window === 'undefined') {
       return false;
     }
 
-    const idTokenJwt: string | null = localStorage.getItem(
-      ID_TOKEN_LOCAL_STORAGE_KEY,
-    );
-
-    if (!idTokenJwt) {
+    if (!this.idTokenJwt) {
       return false;
     }
 
-    const isExpiredIdToken: boolean = this._isExpiredIdToken(idTokenJwt);
+    const isExpiredIdToken: boolean = this._isExpiredIdToken(this.idTokenJwt);
 
     if (isExpiredIdToken) {
-      localStorage.removeItem(ID_TOKEN_LOCAL_STORAGE_KEY);
       return false;
     }
 
     return true;
   }
 
-  logout(): void {
-    localStorage.removeItem(ID_TOKEN_LOCAL_STORAGE_KEY);
+  resetAuthorization(): void {
+    this.idTokenJwt = undefined;
+    this.idTokenClaims = undefined;
+    this.vpTokenJsonLd = undefined;
   }
 }
