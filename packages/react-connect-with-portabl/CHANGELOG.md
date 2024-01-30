@@ -1,5 +1,13 @@
 # @portabl/react-connect-with-portabl
 
+## 0.0.9
+
+### Patch Changes
+
+- 9a19c62: Modularize connect and make tokens available
+- Updated dependencies [9a19c62]
+  - @portabl/js-connect-with-portabl@0.0.9
+
 ## 0.0.8
 
 ### Patch Changes
