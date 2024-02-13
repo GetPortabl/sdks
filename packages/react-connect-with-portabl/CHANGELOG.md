@@ -1,5 +1,11 @@
 # @portabl/react-connect-with-portabl
 
+## 0.0.10
+
+### Patch Changes
+
+- 7739e88: fix: tweak loading state to work properly with hydration
+
 ## 0.0.9
 
 ### Patch Changes
