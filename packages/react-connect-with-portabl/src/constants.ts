@@ -1,6 +1,6 @@
 import { IConnectAuthState } from './types';
 
-export const RESPONSE_CODE_REGEX = /[?&]response_code=[^&]+/;
+export const RESPONSE_CODE_SEARCH_PARAM = 'response_code';
 
 export const DEFAULT_AUTH_STATE: IConnectAuthState = {
   isLoading: false,
