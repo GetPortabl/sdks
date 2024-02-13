@@ -33,7 +33,7 @@ type ConnectProviderProps = IConnectClientOptions & {
    * import { useSearchParams } from 'next/navigation';
    *
    *  export default function MyApp() {
-   *    const searchPArams = useSearchParams()
+   *    const searchParams = useSearchParams()
    *
    *    return (
    *      <ConnectProvider
