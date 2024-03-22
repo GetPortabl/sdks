@@ -109,14 +109,14 @@ export const ConnectProvider = ({
   const hasHandledRedirectCallbackRef = useRef(false);
 
   useEffect(() => {
-    if (hasHandledRedirectCallbackRef.current) {
-      return;
-    }
-
-    hasHandledRedirectCallbackRef.current = true;
-
     if (isResponseCodePresent) {
       (async () => {
+        if (hasHandledRedirectCallbackRef.current) {
+          return;
+        }
+
+        hasHandledRedirectCallbackRef.current = true;
+
         setAuthState(prevAuthState => ({
           ...prevAuthState,
           isHandlingResponse: true,
