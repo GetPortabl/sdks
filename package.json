@@ -21,7 +21,7 @@
     "prepare": "husky install"
   },
   "devDependencies": {
-    "@changesets/cli": "^2.22.0",
+    "@changesets/cli": "^2.27.1",
     "eslint-config-custom": "*",
     "husky": ">=6",
     "lint-staged": ">=10",
