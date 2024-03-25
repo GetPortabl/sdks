@@ -1,5 +1,11 @@
 # @portabl/js-connect-with-portabl
 
+## 0.0.10
+
+### Patch Changes
+
+- ba91554: Update option/props names to be semantically correct
+
 ## 0.0.9
 
 ### Patch Changes

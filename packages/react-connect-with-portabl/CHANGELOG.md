@@ -1,5 +1,13 @@
 # @portabl/react-connect-with-portabl
 
+## 0.0.11
+
+### Patch Changes
+
+- ba91554: Update option/props names to be semantically correct
+- Updated dependencies [ba91554]
+  - @portabl/js-connect-with-portabl@0.0.10
+
 ## 0.0.10
 
 ### Patch Changes
