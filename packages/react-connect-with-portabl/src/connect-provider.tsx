@@ -37,10 +37,10 @@ type ConnectProviderProps = IConnectClientOptions & {
    *
    *    return (
    *      <ConnectProvider
-   *       accountId={PORTABL_ACCOUNT_ID}
+   *       organizationId={PORTABL_ORGANIZATION_ID}
    *       projectId={PORTABL_VERIFY_ISSUE_PROJECT_ID}
    *       connectDomain={PORTABL_CONNECT_DOMAIN}       )
-   *       walletDomain={PORTABL_WALLET_DOMAIN}
+   *       passportDomain={PORTABL_PASSPORT_DOMAIN}
    *       searchParams={searchParams}
    *      >
    *        {children}
@@ -109,14 +109,14 @@ export const ConnectProvider = ({
   const hasHandledRedirectCallbackRef = useRef(false);
 
   useEffect(() => {
-    if (hasHandledRedirectCallbackRef.current) {
-      return;
-    }
-
-    hasHandledRedirectCallbackRef.current = true;
-
     if (isResponseCodePresent) {
       (async () => {
+        if (hasHandledRedirectCallbackRef.current) {
+          return;
+        }
+
+        hasHandledRedirectCallbackRef.current = true;
+
         setAuthState(prevAuthState => ({
           ...prevAuthState,
           isHandlingResponse: true,
