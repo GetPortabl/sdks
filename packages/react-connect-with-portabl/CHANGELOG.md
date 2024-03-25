@@ -1,5 +1,11 @@
 # @portabl/react-connect-with-portabl
 
+## 0.0.12
+
+### Patch Changes
+
+- db6323a: Update js-connect-with-portabl dependency
+
 ## 0.0.11
 
 ### Patch Changes
