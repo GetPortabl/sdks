@@ -68,8 +68,9 @@ export class ConnectClient {
   }
 
   private _isExpiredIdToken(idTokenJwt: string): boolean {
-    const idTokenPayload: IIdTokenClaims =
-      jwtDecode<IIdTokenClaims>(idTokenJwt);
+    const idTokenPayload: IIdTokenClaims = jwtDecode<IIdTokenClaims>(
+      idTokenJwt,
+    );
 
     return Date.now() >= idTokenPayload.exp * 1000;
   }
@@ -78,8 +79,9 @@ export class ConnectClient {
     idTokenJwt: string,
     tx: Transaction,
   ): Promise<boolean> {
-    const idTokenPayload: IIdTokenClaims =
-      jwtDecode<IIdTokenClaims>(idTokenJwt);
+    const idTokenPayload: IIdTokenClaims = jwtDecode<IIdTokenClaims>(
+      idTokenJwt,
+    );
 
     const isValidNonce: boolean = idTokenPayload.nonce === tx.nonce;
     const isSelfSignedJwt: boolean = idTokenPayload.sub === idTokenPayload.iss;
@@ -92,13 +94,19 @@ export class ConnectClient {
   }
 
   private _isValidVpToken(
-    vpToken: IVerifiablePresentation,
+    vpTokenJsonLd: IVerifiablePresentation,
     tx: Transaction,
   ): boolean {
+    const { proof } = vpTokenJsonLd;
     const { nonce } = tx;
-    return Array.isArray(vpToken.proof)
-      ? vpToken.proof.every(proof => this.validateVpTokenProof(proof, nonce))
-      : this.validateVpTokenProof(vpToken.proof, nonce);
+
+    const proofSet: Array<IProof> = !proof
+      ? []
+      : Array.isArray(proof)
+      ? proof
+      : [proof];
+
+    return proofSet.every(proof => this.validateVpTokenProof(proof, nonce));
   }
 
   async authorizeWithRedirect(): Promise<void> {
@@ -125,13 +133,17 @@ export class ConnectClient {
 
     this._followRedirect(createTransactionResult);
 
-    const { authRequestUri, transactionId, state }: ICreateTransactionResponse =
-      await createTransactionResult.json();
+    const {
+      authRequestUri,
+      transactionId,
+      state,
+    }: ICreateTransactionResponse = await createTransactionResult.json();
 
     const authRequestURL: URL = new URL(authRequestUri);
 
-    const clientId: string | null =
-      authRequestURL.searchParams.get('client_id');
+    const clientId: string | null = authRequestURL.searchParams.get(
+      'client_id',
+    );
 
     if (
       typeof transactionId !== 'string' ||
@@ -202,10 +214,12 @@ export class ConnectClient {
         throw new Error(`${LOG_PREFIX} id_token is invalid`);
       }
 
-      const isValidVpToken: boolean = this._isValidVpToken(vpTokenJsonLd, tx);
+      if (vpTokenJsonLd) {
+        const isValidVpToken: boolean = this._isValidVpToken(vpTokenJsonLd, tx);
 
-      if (!isValidVpToken) {
-        throw new Error(`${LOG_PREFIX} vp_token is invalid`);
+        if (!isValidVpToken) {
+          throw new Error(`${LOG_PREFIX} vp_token is invalid`);
+        }
       }
 
       this.idTokenJwt = idTokenJwt;

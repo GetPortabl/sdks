@@ -24,7 +24,7 @@ export interface IVerifiablePresentation
 
 export interface IGetAuthResponseDto {
   readonly id_token: string;
-  readonly vp_token: IVerifiablePresentation;
+  readonly vp_token?: IVerifiablePresentation;
 }
 
 export interface ICreateTransactionResponse {
@@ -42,7 +42,7 @@ export interface IVPToken {
 
 export type GetResponseDataResponse = {
   id_token: string;
-  vp_token: IVPToken;
+  vp_token?: IVPToken;
 };
 
 export type GetAccessTokenResponse = {
